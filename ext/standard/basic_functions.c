@@ -632,8 +632,9 @@ ZEND_BEGIN_ARG_INFO(arginfo_long2ip, 0)
 	ZEND_ARG_INFO(0, proper_address)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_getenv, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_getenv, 0, 0, 1)
 	ZEND_ARG_INFO(0, varname)
+	ZEND_ARG_INFO(0, local_only)
 ZEND_END_ARG_INFO()
 
 #ifdef HAVE_PUTENV
@@ -4009,24 +4010,27 @@ PHP_FUNCTION(long2ip)
  * System Functions *
  ********************/
 
-/* {{{ proto string getenv(string varname)
+/* {{{ proto string getenv(string varname[, bool local_only])
    Get the value of an environment variable */
 PHP_FUNCTION(getenv)
 {
 	char *ptr, *str;
 	size_t str_len;
+	zend_bool local_only = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s", &str, &str_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|b", &str, &str_len, &local_only) == FAILURE) {
 		RETURN_FALSE;
 	}
 
-	/* SAPI method returns an emalloc()'d string */
-	ptr = sapi_getenv(str, str_len);
-	if (ptr) {
-		// TODO: avoid realocation ???
-		RETVAL_STRING(ptr);
-		efree(ptr);
-		return;
+	if (!local_only) {
+		/* SAPI method returns an emalloc()'d string */
+		ptr = sapi_getenv(str, str_len);
+		if (ptr) {
+			// TODO: avoid realocation ???
+			RETVAL_STRING(ptr);
+			efree(ptr);
+			return;
+		}
 	}
 #ifdef PHP_WIN32
 	{
@@ -4766,16 +4770,10 @@ PHP_FUNCTION(call_user_func)
 	zend_fcall_info fci;
 	zend_fcall_info_cache fci_cache;
 
-#ifndef FAST_ZPP
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "f*", &fci, &fci_cache, &fci.params, &fci.param_count) == FAILURE) {
-		return;
-	}
-#else
 	ZEND_PARSE_PARAMETERS_START(1, -1)
 		Z_PARAM_FUNC(fci, fci_cache)
 		Z_PARAM_VARIADIC('*', fci.params, fci.param_count)
 	ZEND_PARSE_PARAMETERS_END();
-#endif
 
 	fci.retval = &retval;
 
@@ -4794,16 +4792,10 @@ PHP_FUNCTION(call_user_func_array)
 	zend_fcall_info fci;
 	zend_fcall_info_cache fci_cache;
 
-#ifndef FAST_ZPP
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "fa/", &fci, &fci_cache, &params) == FAILURE) {
-		return;
-	}
-#else
 	ZEND_PARSE_PARAMETERS_START(2, 2)
 		Z_PARAM_FUNC(fci, fci_cache)
 		Z_PARAM_ARRAY_EX(params, 0, 1)
 	ZEND_PARSE_PARAMETERS_END();
-#endif
 
 	zend_fcall_info_args(&fci, params);
 	fci.retval = &retval;
@@ -5523,7 +5515,7 @@ PHP_FUNCTION(ignore_user_abort)
 		return;
 	}
 
-	old_setting = PG(ignore_user_abort);
+	old_setting = (unsigned short)PG(ignore_user_abort);
 
 	if (ZEND_NUM_ARGS()) {
 		zend_string *key = zend_string_init("ignore_user_abort", sizeof("ignore_user_abort") - 1, 0);

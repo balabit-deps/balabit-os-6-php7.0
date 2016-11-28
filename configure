@@ -959,6 +959,7 @@ with_openssl
 with_kerberos
 with_system_ciphers
 with_pcre_regex
+with_pcre_jit
 with_sqlite3
 with_zlib
 with_zlib_dir
@@ -1786,6 +1787,7 @@ Extensions:
   --with-system-ciphers   OPENSSL: Use system default cipher list instead of hardcoded value
   --with-pcre-regex=DIR   Include Perl Compatible Regular Expressions support.
                           DIR is the PCRE install prefix BUNDLED
+  --with-pcre-jit         Enable PCRE JIT functionality
   --without-sqlite3=DIR   Do not include SQLite3 support. DIR is the prefix to
                           SQLite3 installation directory.
   --with-zlib=DIR         Include ZLIB support (requires zlib >= 1.0.9)
@@ -3647,7 +3649,7 @@ ac_config_headers="$ac_config_headers main/php_config.h"
 
 PHP_MAJOR_VERSION=7
 PHP_MINOR_VERSION=0
-PHP_RELEASE_VERSION=8
+PHP_RELEASE_VERSION=13
 PHP_EXTRA_VERSION=""
 PHP_VERSION="$PHP_MAJOR_VERSION.$PHP_MINOR_VERSION.$PHP_RELEASE_VERSION$PHP_EXTRA_VERSION"
 PHP_VERSION_ID=`expr $PHP_MAJOR_VERSION \* 10000 + $PHP_MINOR_VERSION \* 100 + $PHP_RELEASE_VERSION`
@@ -5885,17 +5887,7 @@ if test -n "$ac_cv_pthreads_cflags"; then
 fi
 
 
-if test "$cross_compiling" = yes; then :
-
-    pthreads_working=no
-  case $host_alias in
-  *netware*)
-    pthreads_working=yes
-  esac
-
-
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <pthread.h>
@@ -5913,19 +5905,18 @@ int main() {
     return pthread_create(&thd, NULL, thread_routine, &data);
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
-  pthreads_working=yes
+  pthreads_checked=yes
 
 else
 
-  pthreads_working=no
+  pthreads_checked=no
+
 
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
   LIBS=$save_LIBS
   CFLAGS=$save_CFLAGS
 
@@ -5941,17 +5932,7 @@ else
       ac_save=$CFLAGS
       CFLAGS="$CFLAGS $flag"
 
-if test "$cross_compiling" = yes; then :
-
-    pthreads_working=no
-  case $host_alias in
-  *netware*)
-    pthreads_working=yes
-  esac
-
-
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <pthread.h>
@@ -5969,55 +5950,43 @@ int main() {
     return pthread_create(&thd, NULL, thread_routine, &data);
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
-  pthreads_working=yes
+  pthreads_checked=yes
 
 else
 
-  pthreads_working=no
+  pthreads_checked=no
+
 
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
       CFLAGS=$ac_save
-      if test "$pthreads_working" = "yes"; then
+      if test "$pthreads_checked" = "yes"; then
         ac_cv_pthreads_cflags=$flag
         break
       fi
     done
   fi
-fi
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_pthreads_cflags" >&5
 $as_echo "$ac_cv_pthreads_cflags" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthreads_lib" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthreads_lib" >&5
 $as_echo_n "checking for pthreads_lib... " >&6; }
 if ${ac_cv_pthreads_lib+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-ac_cv_pthreads_lib=
-if test "$pthreads_working" != "yes"; then
-  for lib in pthread pthreads c_r; do
-    ac_save=$LIBS
-    LIBS="$LIBS -l$lib"
+  ac_cv_pthreads_lib=
+  if test "$pthreads_working" != "yes"; then
+   for lib in pthread pthreads c_r; do
+      ac_save=$LIBS
+      LIBS="$LIBS -l$lib"
 
-if test "$cross_compiling" = yes; then :
-
-    pthreads_working=no
-  case $host_alias in
-  *netware*)
-    pthreads_working=yes
-  esac
-
-
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <pthread.h>
@@ -6035,30 +6004,34 @@ int main() {
     return pthread_create(&thd, NULL, thread_routine, &data);
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
-  pthreads_working=yes
+  pthreads_checked=yes
 
 else
 
-  pthreads_working=no
+  pthreads_checked=no
+
 
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-    LIBS=$ac_save
-    if test "$pthreads_working" = "yes"; then
-      ac_cv_pthreads_lib=$lib
-      break
-    fi
-  done
-fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      LIBS=$ac_save
+      if test "$pthreads_checked" = "yes"; then
+        ac_cv_pthreads_lib=$lib
+        break
+      fi
+    done
+  fi
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_pthreads_lib" >&5
 $as_echo "$ac_cv_pthreads_lib" >&6; }
+
+  if test "x$ac_cv_pthreads_cflags" != "x" -o "x$ac_cv_pthreads_lib" != "x"; then
+    pthreads_working="yes"
+  fi
+fi
 
 if test "$pthreads_working" = "yes"; then
   threads_result="POSIX-Threads found"
@@ -19732,6 +19705,43 @@ EOF
 $as_echo "#define HAVE_BUNDLED_PCRE 1" >>confdefs.h
 
   fi
+
+
+php_with_pcre_jit=yes
+
+
+
+# Check whether --with-pcre-jit was given.
+if test "${with_pcre_jit+set}" = set; then :
+  withval=$with_pcre_jit; PHP_PCRE_JIT=$withval
+else
+
+  PHP_PCRE_JIT=yes
+
+
+fi
+
+
+ext_output=$PHP_PCRE_JIT
+
+
+
+
+  if test "$PHP_PCRE_REGEX" != "no"; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether to enable PCRE JIT functionality" >&5
+$as_echo_n "checking whether to enable PCRE JIT functionality... " >&6; }
+    if test "$PHP_PCRE_JIT" != "no"; then
+
+$as_echo "#define HAVE_PCRE_JIT_SUPPORT 1" >>confdefs.h
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+    else
+      { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+    fi
+  fi
+
 
 
 
@@ -53468,7 +53478,6 @@ $as_echo "#define MYSQLI_USE_MYSQLND 1" >>confdefs.h
 
   fi
 fi
-
 
 
 
@@ -92200,6 +92209,9 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 
+if test "$ac_cv_sizeof_off_t" = "0" ; then
+  as_fn_error $? "off_t undefined; check your library configuration" "$LINENO" 5
+fi
 # The cast to long int works around a bug in the HP C Compiler
 # version HP92453-01 B.11.11.23709.GP, which incorrectly rejects
 # declarations like `int a3[[(sizeof (unsigned char)) >= 0]];'.
@@ -94890,7 +94902,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 94893 "configure"
+#line 94905 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -95770,17 +95782,7 @@ if test -n "$ac_cv_pthreads_cflags"; then
 fi
 
 
-if test "$cross_compiling" = yes; then :
-
-    pthreads_working=no
-  case $host_alias in
-  *netware*)
-    pthreads_working=yes
-  esac
-
-
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <pthread.h>
@@ -95798,19 +95800,18 @@ int main() {
     return pthread_create(&thd, NULL, thread_routine, &data);
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
-  pthreads_working=yes
+  pthreads_checked=yes
 
 else
 
-  pthreads_working=no
+  pthreads_checked=no
+
 
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
   LIBS=$save_LIBS
   CFLAGS=$save_CFLAGS
 
@@ -95826,17 +95827,7 @@ else
       ac_save=$CFLAGS
       CFLAGS="$CFLAGS $flag"
 
-if test "$cross_compiling" = yes; then :
-
-    pthreads_working=no
-  case $host_alias in
-  *netware*)
-    pthreads_working=yes
-  esac
-
-
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <pthread.h>
@@ -95854,55 +95845,43 @@ int main() {
     return pthread_create(&thd, NULL, thread_routine, &data);
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
-  pthreads_working=yes
+  pthreads_checked=yes
 
 else
 
-  pthreads_working=no
+  pthreads_checked=no
+
 
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
       CFLAGS=$ac_save
-      if test "$pthreads_working" = "yes"; then
+      if test "$pthreads_checked" = "yes"; then
         ac_cv_pthreads_cflags=$flag
         break
       fi
     done
   fi
-fi
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_pthreads_cflags" >&5
 $as_echo "$ac_cv_pthreads_cflags" >&6; }
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthreads_lib" >&5
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for pthreads_lib" >&5
 $as_echo_n "checking for pthreads_lib... " >&6; }
 if ${ac_cv_pthreads_lib+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
-ac_cv_pthreads_lib=
-if test "$pthreads_working" != "yes"; then
-  for lib in pthread pthreads c_r; do
-    ac_save=$LIBS
-    LIBS="$LIBS -l$lib"
+  ac_cv_pthreads_lib=
+  if test "$pthreads_working" != "yes"; then
+   for lib in pthread pthreads c_r; do
+      ac_save=$LIBS
+      LIBS="$LIBS -l$lib"
 
-if test "$cross_compiling" = yes; then :
-
-    pthreads_working=no
-  case $host_alias in
-  *netware*)
-    pthreads_working=yes
-  esac
-
-
-else
-  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
 #include <pthread.h>
@@ -95920,30 +95899,34 @@ int main() {
     return pthread_create(&thd, NULL, thread_routine, &data);
 }
 _ACEOF
-if ac_fn_c_try_run "$LINENO"; then :
+if ac_fn_c_try_link "$LINENO"; then :
 
-  pthreads_working=yes
+  pthreads_checked=yes
 
 else
 
-  pthreads_working=no
+  pthreads_checked=no
+
 
 fi
-rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
-  conftest.$ac_objext conftest.beam conftest.$ac_ext
-fi
-
-    LIBS=$ac_save
-    if test "$pthreads_working" = "yes"; then
-      ac_cv_pthreads_lib=$lib
-      break
-    fi
-  done
-fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+      LIBS=$ac_save
+      if test "$pthreads_checked" = "yes"; then
+        ac_cv_pthreads_lib=$lib
+        break
+      fi
+    done
+  fi
 
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_pthreads_lib" >&5
 $as_echo "$ac_cv_pthreads_lib" >&6; }
+
+  if test "x$ac_cv_pthreads_cflags" != "x" -o "x$ac_cv_pthreads_lib" != "x"; then
+    pthreads_working="yes"
+  fi
+fi
 
 if test "$pthreads_working" = "yes"; then
   threads_result="POSIX-Threads found"
@@ -96972,7 +96955,7 @@ ia64-*-hpux*)
   ;;
 *-*-irix6*)
   # Find out which ABI we are using.
-  echo '#line 96975 "configure"' > conftest.$ac_ext
+  echo '#line 96958 "configure"' > conftest.$ac_ext
   if { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_compile\""; } >&5
   (eval $ac_compile) 2>&5
   ac_status=$?
@@ -98370,7 +98353,7 @@ else
       LDFLAGS="$LDFLAGS -Wl,-exported_symbols_list,conftest.sym"
 
 cat > conftest.$ac_ext <<EOF
-#line 98373 "configure"
+#line 98356 "configure"
 #include "confdefs.h"
 int main() {
 ; return 0; }
@@ -98528,11 +98511,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"configure:98531: $lt_compile\"" >&5)
+   (eval echo "\"configure:98514: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "configure:98535: \$? = $ac_status" >&5
+   echo "configure:98518: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -98826,11 +98809,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"configure:98829: $lt_compile\"" >&5)
+   (eval echo "\"configure:98812: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "configure:98833: \$? = $ac_status" >&5
+   echo "configure:98816: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -98930,11 +98913,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"configure:98933: $lt_compile\"" >&5)
+   (eval echo "\"configure:98916: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "configure:98937: \$? = $ac_status" >&5
+   echo "configure:98920: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized
@@ -99394,7 +99377,7 @@ _LT_EOF
        # Determine the default libpath from the value encoded in an empty executable.
 
 cat > conftest.$ac_ext <<EOF
-#line 99397 "configure"
+#line 99380 "configure"
 #include "confdefs.h"
 int main() {
 ; return 0; }
@@ -99436,7 +99419,7 @@ if test -z "$aix_libpath"; then aix_libpath="/usr/lib:/lib"; fi
 	 # Determine the default libpath from the value encoded in an empty executable.
 
 cat > conftest.$ac_ext <<EOF
-#line 99439 "configure"
+#line 99422 "configure"
 #include "confdefs.h"
 int main() {
 ; return 0; }
@@ -100953,7 +100936,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 100956 "configure"
+#line 100939 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -101053,7 +101036,7 @@ else
   lt_dlunknown=0; lt_dlno_uscore=1; lt_dlneed_uscore=2
   lt_status=$lt_dlunknown
   cat > conftest.$ac_ext <<EOF
-#line 101056 "configure"
+#line 101039 "configure"
 #include "confdefs.h"
 
 #if HAVE_DLFCN_H
@@ -102118,7 +102101,7 @@ case $host_os in
       # Determine the default libpath from the value encoded in an empty executable.
 
 cat > conftest.$ac_ext <<EOF
-#line 102121 "configure"
+#line 102104 "configure"
 #include "confdefs.h"
 int main() {
 ; return 0; }
@@ -102161,7 +102144,7 @@ if test -z "$aix_libpath"; then aix_libpath="/usr/lib:/lib"; fi
 	# Determine the default libpath from the value encoded in an empty executable.
 
 cat > conftest.$ac_ext <<EOF
-#line 102164 "configure"
+#line 102147 "configure"
 #include "confdefs.h"
 int main() {
 ; return 0; }
@@ -103413,11 +103396,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"configure:103416: $lt_compile\"" >&5)
+   (eval echo "\"configure:103399: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>conftest.err)
    ac_status=$?
    cat conftest.err >&5
-   echo "configure:103420: \$? = $ac_status" >&5
+   echo "configure:103403: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s "$ac_outfile"; then
      # The compiler can only warn and ignore the option if not recognized
      # So say no if there are warnings other than the usual output.
@@ -103517,11 +103500,11 @@ else
    -e 's:.*FLAGS}\{0,1\} :&$lt_compiler_flag :; t' \
    -e 's: [^ ]*conftest\.: $lt_compiler_flag&:; t' \
    -e 's:$: $lt_compiler_flag:'`
-   (eval echo "\"configure:103520: $lt_compile\"" >&5)
+   (eval echo "\"configure:103503: $lt_compile\"" >&5)
    (eval "$lt_compile" 2>out/conftest.err)
    ac_status=$?
    cat out/conftest.err >&5
-   echo "configure:103524: \$? = $ac_status" >&5
+   echo "configure:103507: \$? = $ac_status" >&5
    if (exit $ac_status) && test -s out/conftest2.$ac_objext
    then
      # The compiler can only warn and ignore the option if not recognized

@@ -2013,6 +2013,7 @@ static void date_register_classes(void) /* {{{ */
 	date_object_handlers_immutable.clone_obj = date_object_clone_date;
 	date_object_handlers_immutable.compare_objects = date_object_compare_date;
 	date_object_handlers_immutable.get_properties = date_object_get_properties;
+	date_object_handlers_immutable.get_gc = date_object_get_gc;
 	zend_class_implements(date_ce_immutable, 1, date_ce_interface);
 
 	INIT_CLASS_ENTRY(ce_timezone, "DateTimeZone", date_funcs_timezone);
@@ -2170,7 +2171,7 @@ static HashTable *date_object_get_properties(zval *object) /* {{{ */
 
 	props = zend_std_get_properties(object);
 
-	if (!dateobj->time || GC_G(gc_active)) {
+	if (!dateobj->time) {
 		return props;
 	}
 
@@ -3610,6 +3611,7 @@ static int timezone_initialize(php_timezone_obj *tzobj, /*const*/ char *tz, size
 
 	if (strlen(tz) != tz_len) {
 		php_error_docref(NULL, E_WARNING, "Timezone must not contain null bytes");
+		efree(dummy_t);
 		return FAILURE;
 	}
 
@@ -4111,7 +4113,7 @@ static int php_date_interval_initialize_from_hash(zval **return_value, php_inter
 #define PHP_DATE_INTERVAL_READ_PROPERTY(element, member, itype, def) \
 	do { \
 		zval *z_arg = zend_hash_str_find(myht, element, sizeof(element) - 1); \
-		if (z_arg) { \
+		if (z_arg && Z_TYPE_P(z_arg) <= IS_STRING) { \
 			(*intobj)->diff->member = (itype)zval_get_long(z_arg); \
 		} else { \
 			(*intobj)->diff->member = (itype)def; \
@@ -4121,7 +4123,7 @@ static int php_date_interval_initialize_from_hash(zval **return_value, php_inter
 #define PHP_DATE_INTERVAL_READ_PROPERTY_I64(element, member) \
 	do { \
 		zval *z_arg = zend_hash_str_find(myht, element, sizeof(element) - 1); \
-		if (z_arg) { \
+		if (z_arg && Z_TYPE_P(z_arg) <= IS_STRING) { \
 			zend_string *str = zval_get_string(z_arg); \
 			DATE_A64I((*intobj)->diff->member, ZSTR_VAL(str)); \
 			zend_string_release(str); \
@@ -4851,7 +4853,7 @@ static HashTable *date_object_get_properties_period(zval *object) /* {{{ */
 
 	props = zend_std_get_properties(object);
 
-	if (!period_obj->start || GC_G(gc_active)) {
+	if (!period_obj->start) {
 		return props;
 	}
 

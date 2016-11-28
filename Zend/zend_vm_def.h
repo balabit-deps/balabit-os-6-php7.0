@@ -2312,6 +2312,7 @@ ZEND_VM_HANDLER(39, ZEND_ASSIGN_REF, VAR|CV, VAR|CV)
 	    UNEXPECTED(Z_TYPE_P(EX_VAR(opline->op1.var)) != IS_INDIRECT) &&
 	    UNEXPECTED(!Z_ISREF_P(EX_VAR(opline->op1.var)))) {
 		zend_throw_error(NULL, "Cannot assign by reference to overloaded object");
+		FREE_UNFETCHED_OP1();
 		FREE_OP2_VAR_PTR();
 		HANDLE_EXCEPTION();
 	}
@@ -3011,15 +3012,19 @@ ZEND_VM_HANDLER(112, ZEND_INIT_METHOD_CALL, CONST|TMPVAR|UNUSED|CV, CONST|TMPVAR
 		GC_REFCOUNT(obj)++; /* For $this pointer */
 	}
 
+	FREE_OP2();
+	FREE_OP1();
+
+	if ((OP1_TYPE & (IS_VAR|IS_TMP_VAR)) && UNEXPECTED(EG(exception))) {
+		HANDLE_EXCEPTION();
+	}
+
 	call = zend_vm_stack_push_call_frame(call_info,
 		fbc, opline->extended_value, called_scope, obj);
 	call->prev_execute_data = EX(call);
 	EX(call) = call;
 
-	FREE_OP2();
-	FREE_OP1();
-
-	ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
+	ZEND_VM_NEXT_OPCODE();
 }
 
 ZEND_VM_HANDLER(113, ZEND_INIT_STATIC_METHOD_CALL, CONST|VAR, CONST|TMPVAR|UNUSED|CV)
@@ -3160,7 +3165,7 @@ ZEND_VM_HANDLER(113, ZEND_INIT_STATIC_METHOD_CALL, CONST|VAR, CONST|TMPVAR|UNUSE
 	call->prev_execute_data = EX(call);
 	EX(call) = call;
 
-	ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
+	ZEND_VM_NEXT_OPCODE();
 }
 
 ZEND_VM_HANDLER(59, ZEND_INIT_FCALL_BY_NAME, ANY, CONST)
@@ -3282,7 +3287,6 @@ ZEND_VM_C_LABEL(try_function_name):
 			called_scope = NULL;
 			object = NULL;
 		}
-		FREE_OP2();
 	} else if (OP2_TYPE != IS_CONST &&
 	    EXPECTED(Z_TYPE_P(function_name) == IS_OBJECT) &&
 		Z_OBJ_HANDLER_P(function_name, get_closure) &&
@@ -3296,7 +3300,6 @@ ZEND_VM_C_LABEL(try_function_name):
 			call_info |= ZEND_CALL_RELEASE_THIS;
 			GC_REFCOUNT(object)++; /* For $this pointer */
 		}
-		FREE_OP2();
 	} else if (EXPECTED(Z_TYPE_P(function_name) == IS_ARRAY) &&
 			zend_hash_num_elements(Z_ARRVAL_P(function_name)) == 2) {
 		zval *obj;
@@ -3380,7 +3383,6 @@ ZEND_VM_C_LABEL(try_function_name):
 				GC_REFCOUNT(object)++; /* For $this pointer */
 			}
 		}
-		FREE_OP2();
 	} else if ((OP2_TYPE & (IS_VAR|IS_CV)) && Z_TYPE_P(function_name) == IS_REFERENCE) {
 		function_name = Z_REFVAL_P(function_name);
 		ZEND_VM_C_GOTO(try_function_name);
@@ -3393,6 +3395,18 @@ ZEND_VM_C_LABEL(try_function_name):
 		}
 		zend_throw_error(NULL, "Function name must be a string");
 		FREE_OP2();
+		HANDLE_EXCEPTION();
+	}
+
+	FREE_OP2();
+	if ((OP2_TYPE & (IS_VAR|IS_TMP_VAR)) && UNEXPECTED(EG(exception))) {
+		if (call_info & ZEND_CALL_RELEASE_THIS) {
+			zend_object_release(object);
+		}
+		if (fbc->common.fn_flags & ZEND_ACC_CALL_VIA_TRAMPOLINE) {
+			zend_string_release(fbc->common.function_name);
+			zend_free_trampoline(fbc);
+		}
 		HANDLE_EXCEPTION();
 	}
 	call = zend_vm_stack_push_call_frame(call_info,
@@ -3420,6 +3434,19 @@ ZEND_VM_HANDLER(118, ZEND_INIT_USER_CALL, CONST, CONST|TMPVAR|CV)
 	function_name = GET_OP2_ZVAL_PTR(BP_VAR_R);
 	if (zend_is_callable_ex(function_name, NULL, 0, NULL, &fcc, &error)) {
 		func = fcc.function_handler;
+		called_scope = fcc.called_scope;
+		object = fcc.object;
+		if (error) {
+			efree(error);
+			/* This is the only soft error is_callable() can generate */
+			zend_error(E_DEPRECATED,
+				"Non-static method %s::%s() should not be called statically",
+				ZSTR_VAL(func->common.scope->name), ZSTR_VAL(func->common.function_name));
+			if (UNEXPECTED(EG(exception) != NULL)) {
+				FREE_OP2();
+				HANDLE_EXCEPTION();
+			}
+		}
 		if (func->common.fn_flags & ZEND_ACC_CLOSURE) {
 			/* Delay closure destruction until its invocation */
 			if (OP2_TYPE & (IS_VAR|IS_CV)) {
@@ -3429,25 +3456,28 @@ ZEND_VM_HANDLER(118, ZEND_INIT_USER_CALL, CONST, CONST|TMPVAR|CV)
 			GC_REFCOUNT((zend_object*)func->common.prototype)++;
 			call_info |= ZEND_CALL_CLOSURE;
 		}
-		called_scope = fcc.called_scope;
-		object = fcc.object;
 		if (object) {
 			call_info |= ZEND_CALL_RELEASE_THIS;
 			GC_REFCOUNT(object)++; /* For $this pointer */
 		}
-		if (error) {
-			efree(error);
-			/* This is the only soft error is_callable() can generate */
-			zend_error(E_DEPRECATED,
-				"Non-static method %s::%s() should not be called statically",
-				ZSTR_VAL(func->common.scope->name), ZSTR_VAL(func->common.function_name));
-			if (UNEXPECTED(EG(exception) != NULL)) {
-				HANDLE_EXCEPTION();
+
+		FREE_OP2();
+		if ((OP2_TYPE & (IS_TMP_VAR|IS_VAR)) && UNEXPECTED(EG(exception))) {
+			if (call_info & ZEND_CALL_CLOSURE) {
+				zend_object_release((zend_object*)func->common.prototype);
 			}
+			if (call_info & ZEND_CALL_RELEASE_THIS) {
+				zend_object_release(object);
+			}
+			HANDLE_EXCEPTION();
 		}
 	} else {
 		zend_internal_type_error(EX_USES_STRICT_TYPES(), "%s() expects parameter 1 to be a valid callback, %s", Z_STRVAL_P(EX_CONSTANT(opline->op1)), error);
 		efree(error);
+		FREE_OP2();
+		if (UNEXPECTED(EG(exception))) {
+			HANDLE_EXCEPTION();
+		}
 		func = (zend_function*)&zend_pass_function;
 		called_scope = NULL;
 		object = NULL;
@@ -3458,8 +3488,7 @@ ZEND_VM_HANDLER(118, ZEND_INIT_USER_CALL, CONST, CONST|TMPVAR|CV)
 	call->prev_execute_data = EX(call);
 	EX(call) = call;
 
-	FREE_OP2();
-	ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
+	ZEND_VM_NEXT_OPCODE();
 }
 
 ZEND_VM_HANDLER(69, ZEND_INIT_NS_FCALL_BY_NAME, ANY, CONST)
@@ -4153,6 +4182,7 @@ ZEND_VM_HANDLER(107, ZEND_CATCH, CONST, CV)
 	USE_OPLINE
 	zend_class_entry *ce, *catch_ce;
 	zend_object *exception;
+	zval *ex;
 
 	SAVE_OPLINE();
 	/* Check whether an exception has been thrown, if not, jump over code */
@@ -4187,8 +4217,12 @@ ZEND_VM_HANDLER(107, ZEND_CATCH, CONST, CV)
 	}
 
 	exception = EG(exception);
-	zval_ptr_dtor(EX_VAR(opline->op2.var));
-	ZVAL_OBJ(EX_VAR(opline->op2.var), EG(exception));
+	ex = EX_VAR(opline->op2.var);
+	if (UNEXPECTED(Z_ISREF_P(ex))) {
+		ex = Z_REFVAL_P(ex);
+	}
+	zval_ptr_dtor(ex);
+	ZVAL_OBJ(ex, EG(exception));
 	if (UNEXPECTED(EG(exception) != exception)) {
 		GC_REFCOUNT(EG(exception))++;
 		HANDLE_EXCEPTION();
@@ -4940,7 +4974,7 @@ ZEND_VM_HANDLER(68, ZEND_NEW, CONST|VAR, ANY)
 			ZVAL_COPY(EX_VAR(opline->result.var), &object_zval);
 		}
 
-		ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
+		ZEND_VM_NEXT_OPCODE();
 	}
 }
 
@@ -5226,7 +5260,10 @@ ZEND_VM_C_LABEL(num_index):
 		}
 		FREE_OP2();
 	} else {
-		zend_hash_next_index_insert(Z_ARRVAL_P(EX_VAR(opline->result.var)), expr_ptr);
+		if (!zend_hash_next_index_insert(Z_ARRVAL_P(EX_VAR(opline->result.var)), expr_ptr)) {
+			zend_error(E_WARNING, "Cannot add element to the array as the next element is already occupied");
+			zval_ptr_dtor(expr_ptr);
+		}
 	}
 	ZEND_VM_NEXT_OPCODE_CHECK_EXCEPTION();
 }
@@ -5449,6 +5486,10 @@ ZEND_VM_HANDLER(73, ZEND_INCLUDE_OR_EVAL, CONST|TMPVAR|CV, ANY)
 	}
 	FREE_OP1();
 	if (UNEXPECTED(EG(exception) != NULL)) {
+		if (new_op_array != NULL) {
+			destroy_op_array(new_op_array);
+			efree_size(new_op_array, sizeof(zend_op_array));
+		}
 		HANDLE_EXCEPTION();
 	} else if (EXPECTED(new_op_array != NULL)) {
 		zval *return_value = NULL;
@@ -7469,12 +7510,14 @@ ZEND_VM_HANDLER(142, ZEND_YIELD_FROM, CONST|TMP|VAR|CV, ANY)
 			if (Z_ISUNDEF(new_gen->retval)) {
 				if (UNEXPECTED(zend_generator_get_current(new_gen) == generator)) {
 					zend_throw_error(NULL, "Impossible to yield from the Generator being currently run");
+					zval_ptr_dtor(val);
 					HANDLE_EXCEPTION();
 				} else {
 					zend_generator_yield_from(generator, new_gen);
 				}
 			} else if (UNEXPECTED(new_gen->execute_data == NULL)) {
 				zend_throw_error(NULL, "Generator passed to yield from was aborted without proper return and is unable to continue");
+				zval_ptr_dtor(val);
 				HANDLE_EXCEPTION();
 			} else {
 				if (RETURN_VALUE_USED(opline)) {

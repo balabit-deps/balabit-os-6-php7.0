@@ -268,8 +268,8 @@ static zend_bool zend_do_perform_implementation_check(const zend_function *fe, c
 		return 1;
 	}
 
-	/* If both methods are private do not enforce a signature */
-    if ((fe->common.fn_flags & ZEND_ACC_PRIVATE) && (proto->common.fn_flags & ZEND_ACC_PRIVATE)) {
+	/* If the prototype method is private do not enforce a signature */
+	if (proto->common.fn_flags & ZEND_ACC_PRIVATE) {
 		return 1;
 	}
 
@@ -1180,6 +1180,7 @@ static void zend_add_trait_method(zend_class_entry *ce, const char *name, zend_s
 	function_add_ref(fn);
 	new_fn = zend_arena_alloc(&CG(arena), sizeof(zend_op_array));
 	memcpy(new_fn, fn, sizeof(zend_op_array));
+	new_fn->common.fn_flags |= ZEND_ACC_ARENA_ALLOCATED;
 	fn = zend_hash_update_ptr(&ce->function_table, key, new_fn);
 	zend_add_magic_methods(ce, key, fn);
 }

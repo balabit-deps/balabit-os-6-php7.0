@@ -297,6 +297,8 @@ ZEND_API zend_execute_data *zend_generator_check_placeholder_frame(zend_execute_
 
 static void zend_generator_throw_exception(zend_generator *generator, zval *exception)
 {
+	zend_execute_data *original_execute_data = EG(current_execute_data);
+
 	/* if we don't stop an array/iterator yield from, the exception will only reach the generator after the values were all iterated over */
 	if (UNEXPECTED(Z_TYPE(generator->values) != IS_UNDEF)) {
 		zval_ptr_dtor(&generator->values);
@@ -305,7 +307,6 @@ static void zend_generator_throw_exception(zend_generator *generator, zval *exce
 
 	/* Throw the exception in the context of the generator. Decrementing the opline
 	 * to pretend the exception happened during the YIELD opcode. */
-	zend_execute_data *original_execute_data = EG(current_execute_data);
 	EG(current_execute_data) = generator->execute_data;
 	generator->execute_data->opline--;
 	if (exception) {
@@ -521,6 +522,16 @@ ZEND_API zend_generator *zend_generator_update_current(zend_generator *generator
 						zend_throw_exception(zend_ce_ClosedGeneratorException, "Generator yielded from aborted, no return value available", 0);
 
 						EG(current_execute_data) = original_execute_data;
+
+						if (!((old_root ? old_root : generator)->flags & ZEND_GENERATOR_CURRENTLY_RUNNING)) {
+							leaf->node.ptr.root = root;
+							root->node.parent = NULL;
+							if (old_root) {
+								OBJ_RELEASE(&old_root->std);
+							}
+							zend_generator_resume(leaf);
+							return leaf->node.ptr.root; /* this may be updated during zend_generator_resume! */
+						}
 					} else {
 						zval_ptr_dtor(&root->value);
 						ZVAL_COPY(&root->value, &root->node.parent->value);
@@ -861,15 +872,9 @@ ZEND_METHOD(Generator, send)
 	zval *value;
 	zend_generator *generator, *root;
 
-#ifndef FAST_ZPP
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &value) == FAILURE) {
-		return;
-	}
-#else
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 		Z_PARAM_ZVAL(value)
 	ZEND_PARSE_PARAMETERS_END();
-#endif
 
 	generator = (zend_generator *) Z_OBJ_P(getThis());
 
@@ -905,15 +910,9 @@ ZEND_METHOD(Generator, throw)
 	zval *exception, exception_copy;
 	zend_generator *generator;
 
-#ifndef FAST_ZPP
-	if (zend_parse_parameters(ZEND_NUM_ARGS(), "z", &exception) == FAILURE) {
-		return;
-	}
-#else
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 		Z_PARAM_ZVAL(exception)
 	ZEND_PARSE_PARAMETERS_END();
-#endif
 
 	ZVAL_DUP(&exception_copy, exception);
 

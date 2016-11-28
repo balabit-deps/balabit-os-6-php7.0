@@ -660,10 +660,7 @@ static void sapi_cli_server_register_variables(zval *track_vars_array) /* {{{ */
 	if (SG(request_info).path_translated) {
 		sapi_cli_server_register_variable(track_vars_array, "SCRIPT_FILENAME", SG(request_info).path_translated);
 	} else if (client->server->router) {
-		char *temp;
-		spprintf(&temp, 0, "%s/%s", client->server->document_root, client->server->router);
-		sapi_cli_server_register_variable(track_vars_array, "SCRIPT_FILENAME", temp);
-		efree(temp);
+		sapi_cli_server_register_variable(track_vars_array, "SCRIPT_FILENAME", client->server->router);
 	}
 	if (client->request.path_info) {
 		sapi_cli_server_register_variable(track_vars_array, "PATH_INFO", client->request.path_info);
@@ -2152,12 +2149,8 @@ static int php_cli_server_mime_type_ctor(php_cli_server *server, const php_cli_s
 	zend_hash_init(&server->extension_mime_types, 0, NULL, NULL, 1);
 
 	for (pair = mime_type_map; pair->ext; pair++) {
-		size_t ext_len = 0, mime_type_len = 0;
-
-		ext_len = strlen(pair->ext);
-		mime_type_len = strlen(pair->mime_type);
-
-		zend_hash_str_add_mem(&server->extension_mime_types, pair->ext, ext_len, (void*)pair->mime_type, mime_type_len + 1);
+		size_t ext_len = strlen(pair->ext);
+		zend_hash_str_add_ptr(&server->extension_mime_types, pair->ext, ext_len, (void*)pair->mime_type);
 	}
 
 	return SUCCESS;

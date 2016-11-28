@@ -1,3 +1,165 @@
+php7.0 (7.0.13-0ubuntu0.16.04.1) xenial; urgency=medium
+
+  * New upstream release
+    - LP: #1645431
+    - Refresh patches for new upstream release.
+  * Drop:
+    - SECURITY UPDATE: proxy request header vulnerability (httpoxy)
+      + debian/patches/CVE-2016-5385.patch: only use HTTP_PROXY from the
+        local environment in ext/standard/basic_functions.c, main/SAPI.c,
+        main/php_variables.c.
+      + CVE-2016-5385
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: inadequate error handling in bzread()
+      + debian/patches/CVE-2016-5399.patch: do not allow reading past error
+        read in ext/bz2/bz2.c.
+      + CVE-2016-5399
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: integer overflow in the virtual_file_ex function
+      + debian/patches/CVE-2016-6289.patch: properly check path_length in
+        Zend/zend_virtual_cwd.c.
+      + CVE-2016-6289
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: use after free in unserialize() with unexpected
+      session deserialization
+      + debian/patches/CVE-2016-6290.patch: destroy var_hash properly in
+        ext/session/session.c, added test to ext/session/tests/bug72562.phpt.
+      + CVE-2016-6290
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: out of bounds read in exif_process_IFD_in_MAKERNOTE
+      + debian/patches/CVE-2016-6291.patch: add more bounds checks to
+        ext/exif/exif.c.
+      + CVE-2016-6291
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: NULL pointer dereference in exif_process_user_comment
+      + debian/patches/CVE-2016-6292.patch: properly handle encoding in
+        ext/exif/exif.c.
+      + CVE-2016-6292
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: locale_accept_from_http out-of-bounds access
+      + debian/patches/CVE-2016-6294.patch: check length in
+        ext/intl/locale/locale_methods.c, added test to
+        ext/intl/tests/bug72533.phpt.
+      + CVE-2016-6294
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: use after free vulnerability in SNMP with GC and
+      unserialize()
+      + debian/patches/CVE-2016-6295.patch: add new handler to
+        ext/snmp/snmp.c, add test to ext/snmp/tests/bug72479.phpt.
+      + CVE-2016-6295
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: heap buffer overflow in simplestring_addn
+      + debian/patches/CVE-2016-6296.patch: prevent overflows in
+        ext/xmlrpc/libxmlrpc/simplestring.*.
+      + CVE-2016-6296
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: integer overflow in php_stream_zip_opener
+      + debian/patches/CVE-2016-6297.patch: use size_t in
+        ext/zip/zip_stream.c.
+      + CVE-2016-6297
+      [ Fixed in 7.0.9 ]
+    - debian/patches/fix_exif_tests.patch: fix exif test results after
+      security changes.
+      [ Fixed in 7.0.9 ]
+    - SECURITY UPDATE: denial of service or code execution via crafted
+      serialized data
+      + debian/patches/CVE-2016-7124.patch: fix unserializing logic in
+        ext/session/session.c, ext/standard/var_unserializer.c*,
+        ext/wddx/wddx.c, added tests to
+        ext/standard/tests/serialize/bug72663.phpt,
+        ext/standard/tests/serialize/bug72663_2.phpt,
+        ext/standard/tests/serialize/bug72663_3.phpt.
+      + CVE-2016-7124
+      [ Fixed in 7.0.10 ]
+    - SECURITY UPDATE: arbitrary-type session data injection
+      + debian/patches/CVE-2016-7125.patch: consume data even if not storing
+        in ext/session/session.c, added test to
+        ext/session/tests/bug72681.phpt.
+      + CVE-2016-7125
+      [ Fixed in 7.0.10 ]
+    - SECURITY UPDATE: denial of service and possible code execution in
+      imagegammacorrect function
+      + debian/patches/CVE-2016-7127.patch: check gamma values in
+        ext/gd/gd.c, added test to ext/gd/tests/bug72730.phpt.
+      + CVE-2016-7127
+      [ Fixed in 7.0.10 ]
+    - SECURITY UPDATE: information disclosure via exif_process_IFD_in_TIFF
+      + debian/patches/CVE-2016-7128.patch: properly handle thumbnails in
+        ext/exif/exif.c.
+      + CVE-2016-7128
+      [ Fixed in 7.0.10 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      invalid ISO 8601 time value
+      + debian/patches/CVE-2016-7129.patch: properly handle strings in
+        ext/wddx/wddx.c, added test to ext/wddx/tests/bug72749.phpt.
+      + CVE-2016-7129
+      [ Fixed in 7.0.10 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      invalid base64 binary value
+      + debian/patches/CVE-2016-7130.patch: properly handle string in
+        ext/wddx/wddx.c, added test to ext/wddx/tests/bug72750.phpt.
+      + CVE-2016-7130
+      [ Fixed in 7.0.10 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      malformed wddxPacket XML document
+      + debian/patches/CVE-2016-7131.patch: added checks to ext/wddx/wddx.c,
+        added tests to ext/wddx/tests/bug72790.phpt,
+        ext/wddx/tests/bug72799.phpt.
+      + CVE-2016-7131
+      + CVE-2016-7132
+      [ Fixed in 7.0.10 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      long pathname
+      + debian/patches/CVE-2016-7133.patch: fix memory allocator in
+        Zend/zend_alloc.c.
+      + CVE-2016-7133
+      [ Fixed in 7.0.10 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      long string and curl_escape call
+      + debian/patches/CVE-2016-7134.patch: check both curl_escape and
+        curl_unescape in ext/curl/interface.c.
+      + CVE-2016-7134
+      [ Fixed in 7.0.10 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      crafted field metadata in MySQL driver
+      + debian/patches/CVE-2016-7412.patch: validate field length in
+        ext/mysqlnd/mysqlnd_wireprotocol.c.
+      + CVE-2016-7412
+      [ Fixed in 7.0.11 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      malformed wddxPacket XML document
+      + debian/patches/CVE-2016-7413.patch: fixed use-after-free in
+        ext/wddx/wddx.c, added test to ext/wddx/tests/bug72860.phpt.
+      + CVE-2016-7413
+      [ Fixed in 7.0.11 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      crafted PHAR archive
+      + debian/patches/CVE-2016-7414.patch: validate signatures in
+        ext/phar/util.c, ext/phar/zip.c.
+      + CVE-2016-7414
+      [ Fixed in 7.0.11 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      MessageFormatter::formatMessage call with a long first argument
+      + debian/patches/CVE-2016-7416.patch: added locale length check to
+        ext/intl/msgformat/msgformat_format.c.
+      + CVE-2016-7416
+      [ Fixed in 7.0.11 ]
+    - SECURITY UPDATE: denial of service or code execution via crafted
+      serialized data
+      + debian/patches/CVE-2016-7417.patch: added type check to
+        ext/spl/spl_array.c, added test to ext/spl/tests/bug73029.phpt, fix
+        test in ext/spl/tests/bug70068.phpt.
+      + CVE-2016-7417
+      [ Fixed in 7.0.11 ]
+    - SECURITY UPDATE: denial of service and possible code execution via
+      malformed wddxPacket XML document
+      + debian/patches/CVE-2016-7418.patch: fix out-of-bounds read in
+        ext/wddx/wddx.c, added test to ext/wddx/tests/bug73065.phpt.
+      + CVE-2016-7418
+      [ Fixed in 7.0.11 ]
+
+ -- Nishanth Aravamudan <nish.aravamudan@canonical.com>  Mon, 28 Nov 2016 12:24:57 -0800
+
 php7.0 (7.0.8-0ubuntu0.16.04.3) xenial-security; urgency=medium
 
   * SECURITY UPDATE: denial of service or code execution via crafted

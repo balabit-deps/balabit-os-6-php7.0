@@ -2042,6 +2042,7 @@ function generate_phpize()
 	CJ = FSO.CreateTextFile(dest + "/config.phpize.js");
 
 	CJ.WriteLine("var PHP_ZTS =" + '"' + PHP_ZTS + '"');
+	CJ.WriteLine("var PHP_DEBUG=" + '"' + PHP_DEBUG + '"');
 	CJ.WriteLine("var PHP_DLL_LIB =" + '"' + get_define('PHPLIB') + '"');
 	CJ.WriteLine("var PHP_DLL =" + '"' + get_define('PHPDLL') + '"');
 
@@ -2496,6 +2497,9 @@ function toolset_setup_project_tools()
 	if (!PATH_PROG('bison')) {
 		ERROR('bison is required')
 	}
+
+	/* TODO throw error, ignore for now for BC. */
+	PATH_PROG('sed');
 
 	RE2C = PATH_PROG('re2c');
 	if (RE2C) {
