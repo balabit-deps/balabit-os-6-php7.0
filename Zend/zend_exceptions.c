@@ -291,13 +291,9 @@ ZEND_METHOD(exception, __construct)
 /* {{{ proto Exception::__wakeup()
    Exception unserialize checks */
 #define CHECK_EXC_TYPE(name, type) \
-	ZVAL_UNDEF(&value); \
 	pvalue = zend_read_property(i_get_exception_base(object), (object), name, sizeof(name) - 1, 1, &value); \
-	if(Z_TYPE_P(pvalue) != IS_UNDEF && Z_TYPE_P(pvalue) != type) { \
-		zval tmp; \
-		ZVAL_STRINGL(&tmp, name, sizeof(name) - 1); \
-		Z_OBJ_HANDLER_P(object, unset_property)(object, &tmp, NULL); \
-		zval_ptr_dtor(&tmp); \
+	if (Z_TYPE_P(pvalue) != IS_NULL && Z_TYPE_P(pvalue) != type) { \
+		zend_unset_property(i_get_exception_base(object), object, name, sizeof(name)-1); \
 	}
 
 ZEND_METHOD(exception, __wakeup)
@@ -310,7 +306,12 @@ ZEND_METHOD(exception, __wakeup)
 	CHECK_EXC_TYPE("file", IS_STRING);
 	CHECK_EXC_TYPE("line", IS_LONG);
 	CHECK_EXC_TYPE("trace", IS_ARRAY);
-	CHECK_EXC_TYPE("previous", IS_OBJECT);
+	pvalue = zend_read_property(i_get_exception_base(object), object, "previous", sizeof("previous")-1, 1, &value);
+	if (pvalue && Z_TYPE_P(pvalue) != IS_NULL && (Z_TYPE_P(pvalue) != IS_OBJECT ||
+			!instanceof_function(Z_OBJCE_P(pvalue), i_get_exception_base(object)) ||
+			pvalue == object)) {
+		zend_unset_property(i_get_exception_base(object), object, "previous", sizeof("previous")-1);
+	}
 }
 /* }}} */
 
@@ -563,11 +564,14 @@ static void _build_trace_args(zval *arg, smart_str *str) /* {{{ */
 		case IS_ARRAY:
 			smart_str_appends(str, "Array, ");
 			break;
-		case IS_OBJECT:
+		case IS_OBJECT: {
+			zend_string *class_name = Z_OBJ_HANDLER_P(arg, get_class_name)(Z_OBJ_P(arg));
 			smart_str_appends(str, "Object(");
-			smart_str_appends(str, ZSTR_VAL(Z_OBJCE_P(arg)->name));
+			smart_str_appends(str, ZSTR_VAL(class_name));
 			smart_str_appends(str, "), ");
+			zend_string_release(class_name);
 			break;
+		}
 	}
 }
 /* }}} */
@@ -769,9 +773,24 @@ ZEND_METHOD(exception, __toString)
 		zend_string_release(file);
 		zval_ptr_dtor(&trace);
 
+		Z_OBJPROP_P(exception)->u.v.nApplyCount++;
 		exception = GET_PROPERTY(exception, "previous");
+		if (exception && Z_TYPE_P(exception) == IS_OBJECT && Z_OBJPROP_P(exception)->u.v.nApplyCount > 0) {
+			break;
+		}
 	}
 	zval_dtor(&fname);
+
+	exception = getThis();
+	/* Reset apply counts */
+	while (exception && Z_TYPE_P(exception) == IS_OBJECT && (base_ce = i_get_exception_base(exception)) && instanceof_function(Z_OBJCE_P(exception), base_ce)) {
+		if (Z_OBJPROP_P(exception)->u.v.nApplyCount) {
+			Z_OBJPROP_P(exception)->u.v.nApplyCount--;
+		} else {
+			break;
+		}
+		exception = GET_PROPERTY(exception, "previous");
+	}
 
 	exception = getThis();
 	base_ce = i_get_exception_base(exception);
@@ -1069,6 +1088,7 @@ ZEND_API ZEND_COLD void zend_throw_exception_object(zval *exception) /* {{{ */
 
 	if (!exception_ce || !instanceof_function(exception_ce, zend_ce_throwable)) {
 		zend_throw_error(NULL, "Cannot throw objects that do not implement Throwable");
+		zval_ptr_dtor(exception);
 		return;
 	}
 	zend_throw_exception_internal(exception);

@@ -1187,7 +1187,7 @@ CWD_API int virtual_file_ex(cwd_state *state, const char *path, verify_path_func
 	int add_slash;
 	void *tmp;
 
-	if (path_length == 0 || path_length >= MAXPATHLEN-1) {
+	if (path_length <= 0 || path_length >= MAXPATHLEN-1) {
 #ifdef ZEND_WIN32
 		_set_errno(EINVAL);
 #else
@@ -1854,7 +1854,7 @@ CWD_API FILE *virtual_popen(const char *command, const char *type) /* {{{ */
 #else /* Unix */
 CWD_API FILE *virtual_popen(const char *command, const char *type) /* {{{ */
 {
-	int command_length;
+	size_t command_length;
 	int dir_length, extra = 0;
 	char *command_line;
 	char *ptr, *dir;

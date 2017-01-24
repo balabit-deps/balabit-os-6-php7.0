@@ -633,6 +633,10 @@ PHP_FUNCTION(mcrypt_generic)
 		RETURN_FALSE
 	}
 
+	if (data_len > INT_MAX) {
+		php_error_docref(NULL, E_WARNING, "Data size too large, %d maximum", INT_MAX);
+		RETURN_FALSE;
+	}
 	/* Check blocksize */
 	if (mcrypt_enc_is_block_mode(pm->td) == 1) { /* It's a block algorithm */
 		block_size = mcrypt_enc_get_block_size(pm->td);
@@ -684,6 +688,10 @@ PHP_FUNCTION(mdecrypt_generic)
 	}
 
 	/* Check blocksize */
+	if (data_len > INT_MAX) {
+		php_error_docref(NULL, E_WARNING, "Data size too large, %d maximum", INT_MAX);
+		RETURN_FALSE;
+	}
 	if (mcrypt_enc_is_block_mode(pm->td) == 1) { /* It's a block algorithm */
 		block_size = mcrypt_enc_get_block_size(pm->td);
 		data_size = ((((int)data_len - 1) / block_size) + 1) * block_size;
@@ -1291,6 +1299,7 @@ static void php_mcrypt_do_crypt(char* cipher, const char *key, size_t key_len, c
 	}
 
 	if (mcrypt_generic_init(td, (void *) key, (int)key_len, (void *) iv) < 0) {
+		efree(data_s);
 		php_error_docref(NULL, E_RECOVERABLE_ERROR, "Mcrypt initialisation failed");
 		mcrypt_module_close(td);
 		RETURN_FALSE;

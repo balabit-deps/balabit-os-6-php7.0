@@ -405,7 +405,10 @@ static void get_icu_value_src_php( char* tag_name, INTERNAL_FUNCTION_PARAMETERS)
 
 	if(loc_name_len == 0) {
 		loc_name = intl_locale_get_default();
+		loc_name_len = strlen(loc_name);
 	}
+	
+	INTL_CHECK_LOCALE_LEN(loc_name_len);
 
 	/* Call ICU get */
 	tag_value = get_icu_value_internal( loc_name , tag_name , &result ,0);
@@ -1167,8 +1170,10 @@ PHP_FUNCTION(locale_get_all_variants)
 
 	if(loc_name_len == 0) {
 		loc_name = intl_locale_get_default();
+		loc_name_len = strlen(loc_name);
 	}
 
+	INTL_CHECK_LOCALE_LEN(loc_name_len);
 
 	array_init( return_value );
 
@@ -1271,11 +1276,15 @@ PHP_FUNCTION(locale_filter_matches)
 
 	if(loc_range_len == 0) {
 		loc_range = intl_locale_get_default();
+		loc_range_len = strlen(loc_range);
 	}
 
 	if( strcmp(loc_range,"*")==0){
 		RETURN_TRUE;
 	}
+
+	INTL_CHECK_LOCALE_LEN(loc_range_len);
+	INTL_CHECK_LOCALE_LEN(lang_tag_len);
 
 	if( boolCanonical ){
 		/* canonicalize loc_range */
@@ -1551,12 +1560,16 @@ PHP_FUNCTION(locale_lookup)
 	if(loc_range_len == 0) {
 		if(fallback_loc_str) {
 			loc_range = ZSTR_VAL(fallback_loc_str);
+			loc_range_len = ZSTR_LEN(fallback_loc_str);
 		} else {
 			loc_range = intl_locale_get_default();
+			loc_range_len = strlen(loc_range);
 		}
 	}
 
 	hash_arr = Z_ARRVAL_P(arr);
+
+	INTL_CHECK_LOCALE_LEN(loc_range_len);
 
 	if( !hash_arr || zend_hash_num_elements( hash_arr ) == 0 ) {
 		RETURN_EMPTY_STRING();
@@ -1597,6 +1610,24 @@ PHP_FUNCTION(locale_accept_from_http)
 		intl_error_set( NULL, U_ILLEGAL_ARGUMENT_ERROR,
 		"locale_accept_from_http: unable to parse input parameters", 0 );
 		RETURN_FALSE;
+	}
+	if(http_accept_len > ULOC_FULLNAME_CAPACITY) {
+		/* check each fragment, if any bigger than capacity, can't do it due to bug #72533 */
+		char *start = http_accept;
+		char *end;
+		size_t len;
+		do {
+			end = strchr(start, ',');
+			len = end ? end-start : http_accept_len-(start-http_accept);
+			if(len > ULOC_FULLNAME_CAPACITY) {
+				intl_error_set( NULL, U_ILLEGAL_ARGUMENT_ERROR,
+						"locale_accept_from_http: locale string too long", 0 TSRMLS_CC );
+				RETURN_FALSE;
+			}
+			if(end) {
+				start = end+1;
+			}
+		} while(end != NULL);
 	}
 
 	available = ures_openAvailableLocales(NULL, &status);
