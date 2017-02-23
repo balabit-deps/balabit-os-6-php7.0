@@ -2,7 +2,7 @@
    +----------------------------------------------------------------------+
    | PHP Version 7                                                        |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1997-2016 The PHP Group                                |
+   | Copyright (c) 1997-2017 The PHP Group                                |
    +----------------------------------------------------------------------+
    | This source file is subject to version 3.01 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -321,7 +321,7 @@ PHPAPI zend_string *php_escape_shell_cmd(char *str)
 				ZSTR_VAL(cmd)[y++] = str[x];
 				break;
 #else
-			/* % is Windows specific for environmental variables, ^%PATH% will 
+			/* % is Windows specific for environmental variables, ^%PATH% will
 				output PATH while ^%PATH^% will not. escapeshellcmd->val will escape all % and !.
 			*/
 			case '%':

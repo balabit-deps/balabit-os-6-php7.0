@@ -2,7 +2,7 @@
    +----------------------------------------------------------------------+
    | PHP Version 7                                                        |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1997-2016 The PHP Group                                |
+   | Copyright (c) 1997-2017 The PHP Group                                |
    +----------------------------------------------------------------------+
    | This source file is subject to version 3.01 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -1610,7 +1610,7 @@ PHP_FUNCTION(xml_parser_set_option)
 			convert_to_long_ex(val);
 			parser->toffset = Z_LVAL_P(val);
 			if (parser->toffset < 0) {
-				php_error_docref(NULL TSRMLS_CC, E_NOTICE, "tagstart ignored, because it is out of range");
+				php_error_docref(NULL, E_NOTICE, "tagstart ignored, because it is out of range");
 				parser->toffset = 0;
 			}
 			break;

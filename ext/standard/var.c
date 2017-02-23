@@ -2,7 +2,7 @@
    +----------------------------------------------------------------------+
    | PHP Version 7                                                        |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1997-2016 The PHP Group                                |
+   | Copyright (c) 1997-2017 The PHP Group                                |
    +----------------------------------------------------------------------+
    | This source file is subject to version 3.01 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -860,9 +860,6 @@ again:
 			return;
 
 		case IS_OBJECT: {
-				zval retval;
-				zval fname;
-				int res;
 				zend_class_entry *ce = Z_OBJCE_P(struc);
 
 				if (ce->serialize != NULL) {
@@ -891,32 +888,39 @@ again:
 				}
 
 				if (ce != PHP_IC_ENTRY && zend_hash_str_exists(&ce->function_table, "__sleep", sizeof("__sleep")-1)) {
+					zval fname, tmp, retval;
+					int res;
+
+					ZVAL_COPY(&tmp, struc);
 					ZVAL_STRINGL(&fname, "__sleep", sizeof("__sleep") - 1);
 					BG(serialize_lock)++;
-					res = call_user_function_ex(CG(function_table), struc, &fname, &retval, 0, 0, 1, NULL);
+					res = call_user_function_ex(CG(function_table), &tmp, &fname, &retval, 0, 0, 1, NULL);
 					BG(serialize_lock)--;
 					zval_dtor(&fname);
 
 					if (EG(exception)) {
 						zval_ptr_dtor(&retval);
+						zval_ptr_dtor(&tmp);
 						return;
 					}
 
 					if (res == SUCCESS) {
 						if (Z_TYPE(retval) != IS_UNDEF) {
 							if (HASH_OF(&retval)) {
-								php_var_serialize_class(buf, struc, &retval, var_hash);
+								php_var_serialize_class(buf, &tmp, &retval, var_hash);
 							} else {
 								php_error_docref(NULL, E_NOTICE, "__sleep should return an array only containing the names of instance-variables to serialize");
 								/* we should still add element even if it's not OK,
 								 * since we already wrote the length of the array before */
 								smart_str_appendl(buf,"N;", 2);
 							}
-							zval_ptr_dtor(&retval);
 						}
+						zval_ptr_dtor(&retval);
+						zval_ptr_dtor(&tmp);
 						return;
 					}
 					zval_ptr_dtor(&retval);
+					zval_ptr_dtor(&tmp);
 				}
 
 				/* fall-through */
@@ -1036,6 +1040,7 @@ PHP_FUNCTION(unserialize)
 	const unsigned char *p;
 	php_unserialize_data_t var_hash;
 	zval *options = NULL, *classes = NULL;
+	zval *retval;
 	HashTable *class_hash = NULL;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS(), "s|a", &buf, &buf_len, &options) == FAILURE) {
@@ -1067,22 +1072,21 @@ PHP_FUNCTION(unserialize)
 		}
 	}
 
-	if (!php_var_unserialize_ex(return_value, &p, p + buf_len, &var_hash, class_hash)) {
+	retval = var_tmp_var(&var_hash);
+	if (!php_var_unserialize_ex(retval, &p, p + buf_len, &var_hash, class_hash)) {
 		PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 		if (class_hash) {
 			zend_hash_destroy(class_hash);
 			FREE_HASHTABLE(class_hash);
 		}
-		zval_ptr_dtor(return_value);
 		if (!EG(exception)) {
 			php_error_docref(NULL, E_NOTICE, "Error at offset " ZEND_LONG_FMT " of %zd bytes",
 				(zend_long)((char*)p - buf), buf_len);
 		}
 		RETURN_FALSE;
 	}
-	/* We should keep an reference to return_value to prevent it from being dtor
-	   in case nesting calls to unserialize */
-	var_push_dtor(&var_hash, return_value);
+
+	ZVAL_COPY(return_value, retval);
 
 	PHP_VAR_UNSERIALIZE_DESTROY(var_hash);
 	if (class_hash) {

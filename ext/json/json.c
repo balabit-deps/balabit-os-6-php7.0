@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 7                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2016 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -148,7 +148,7 @@ static PHP_GINIT_FUNCTION(json)
 #endif
 	json_globals->encoder_depth = 0;
 	json_globals->error_code = 0;
-	json_globals->encode_max_depth = 0;
+	json_globals->encode_max_depth = PHP_JSON_PARSER_DEFAULT_DEPTH;
 }
 /* }}} */
 
@@ -261,12 +261,12 @@ static PHP_FUNCTION(json_decode)
 	}
 
 	if (depth <= 0) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Depth must be greater than zero");
+		php_error_docref(NULL, E_WARNING, "Depth must be greater than zero");
 		RETURN_NULL();
 	}
 
 	if (depth > INT_MAX) {
-		php_error_docref(NULL TSRMLS_CC, E_WARNING, "Depth must be lower than %d", INT_MAX);
+		php_error_docref(NULL, E_WARNING, "Depth must be lower than %d", INT_MAX);
 		RETURN_NULL();
 	}
 

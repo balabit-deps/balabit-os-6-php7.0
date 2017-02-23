@@ -2,7 +2,7 @@
    +----------------------------------------------------------------------+
    | PHP Version 7                                                        |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1997-2016 The PHP Group                                |
+   | Copyright (c) 1997-2017 The PHP Group                                |
    +----------------------------------------------------------------------+
    | This source file is subject to version 3.01 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -207,6 +207,26 @@ static int get_command(
 
 	return num_matches;
 
+} /* }}} */
+
+void phpdbg_do_help_cmd(char *type) { /* {{{ */
+	char *help;
+
+	if (!type) {
+		pretty_print(get_help("overview!"));
+		return;
+	}
+
+	help = get_help(type);
+
+	if (!help || memcmp(help, "", sizeof("")) == SUCCESS) {
+		pretty_print(get_help("overview!"));
+		pretty_print(
+			"\nrequested help page could not be found");
+		return;
+	}
+
+	pretty_print(help);
 } /* }}} */
 
 PHPDBG_COMMAND(help) /* {{{ */

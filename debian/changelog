@@ -1,3 +1,20 @@
+php7.0 (7.0.15-0ubuntu0.16.04.2) xenial-security; urgency=medium
+
+  * No change rebuild in the -security pocket.
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Thu, 23 Feb 2017 08:42:45 -0500
+
+php7.0 (7.0.15-0ubuntu0.16.04.1) xenial; urgency=medium
+
+  * New upstream release
+    - LP: #1663405
+    - Refresh patches for new upstream release.
+  * debian/patches/0050-Fix-pdo_pgsql.patch: Fixed #73959 - lastInsertId
+    fails to throw an exception in pdsql.  Thanks to andrewnester
+    <andrew.nester.dev@gmail.com>.  Closes LP: #1658289.
+
+ -- Nishanth Aravamudan <nish.aravamudan@canonical.com>  Tue, 14 Feb 2017 14:53:34 -0800
+
 php7.0 (7.0.13-0ubuntu0.16.04.1) xenial; urgency=medium
 
   * New upstream release

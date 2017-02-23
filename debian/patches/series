@@ -88,3 +88,4 @@
 #CVE-2016-7416.patch
 #CVE-2016-7417.patch
 #CVE-2016-7418.patch
+0053-Fix-pdo_pgsql.patch

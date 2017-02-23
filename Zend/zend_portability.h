@@ -2,7 +2,7 @@
    +----------------------------------------------------------------------+
    | Zend Engine                                                          |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1998-2016 Zend Technologies Ltd. (http://www.zend.com) |
+   | Copyright (c) 1998-2017 Zend Technologies Ltd. (http://www.zend.com) |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.00 of the Zend license,     |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -124,6 +124,8 @@
 #else
 # define ZEND_IGNORE_VALUE(x) ((void) (x))
 #endif
+
+#define zend_quiet_write(...) ZEND_IGNORE_VALUE(write(__VA_ARGS__))
 
 /* all HAVE_XXX test have to be after the include of zend_config above */
 

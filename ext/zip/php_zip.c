@@ -2,7 +2,7 @@
   +----------------------------------------------------------------------+
   | PHP Version 7                                                        |
   +----------------------------------------------------------------------+
-  | Copyright (c) 1997-2016 The PHP Group                                |
+  | Copyright (c) 1997-2017 The PHP Group                                |
   +----------------------------------------------------------------------+
   | This source file is subject to version 3.01 of the PHP license,      |
   | that is bundled with this package in the file LICENSE, and is        |
@@ -1590,7 +1590,7 @@ static ZIPARCHIVE_METHOD(addEmptyDir)
 	}
 
 	if (dirname[dirname_len-1] != '/') {
-		s=(char *)emalloc(dirname_len+2);
+		s=(char *)safe_emalloc(dirname_len, 1, 2);
 		strcpy(s, dirname);
 		s[dirname_len] = '/';
 		s[dirname_len+1] = '\0';
@@ -1805,14 +1805,14 @@ static ZIPARCHIVE_METHOD(addFromString)
 
 	ze_obj = Z_ZIP_P(self);
 	if (ze_obj->buffers_cnt) {
-		ze_obj->buffers = (char **)erealloc(ze_obj->buffers, sizeof(char *) * (ze_obj->buffers_cnt+1));
+		ze_obj->buffers = (char **)safe_erealloc(ze_obj->buffers, sizeof(char *), (ze_obj->buffers_cnt+1), 0);
 		pos = ze_obj->buffers_cnt++;
 	} else {
 		ze_obj->buffers = (char **)emalloc(sizeof(char *));
 		ze_obj->buffers_cnt++;
 		pos = 0;
 	}
-	ze_obj->buffers[pos] = (char *)emalloc(ZSTR_LEN(buffer) + 1);
+	ze_obj->buffers[pos] = (char *)safe_emalloc(ZSTR_LEN(buffer), 1, 1);
 	memcpy(ze_obj->buffers[pos], ZSTR_VAL(buffer), ZSTR_LEN(buffer) + 1);
 
 	zs = zip_source_buffer(intern, ze_obj->buffers[pos], ZSTR_LEN(buffer), 0);

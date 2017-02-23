@@ -2,7 +2,7 @@
    +----------------------------------------------------------------------+
    | PHP Version 7                                                        |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1997-2016 The PHP Group                                |
+   | Copyright (c) 1997-2017 The PHP Group                                |
    +----------------------------------------------------------------------+
    | This source file is subject to version 3.01 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -642,7 +642,7 @@ PHP_FUNCTION(mcrypt_generic)
 		block_size = mcrypt_enc_get_block_size(pm->td);
 		data_size = ((((int)data_len - 1) / block_size) + 1) * block_size;
 		if (data_size <= 0) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Integer overflow in data size");
+			php_error_docref(NULL, E_WARNING, "Integer overflow in data size");
 			RETURN_FALSE;
 		}
 		data_str = zend_string_alloc(data_size, 0);
@@ -696,7 +696,7 @@ PHP_FUNCTION(mdecrypt_generic)
 		block_size = mcrypt_enc_get_block_size(pm->td);
 		data_size = ((((int)data_len - 1) / block_size) + 1) * block_size;
 		if (data_size <= 0) {
-			php_error_docref(NULL TSRMLS_CC, E_WARNING, "Integer overflow in data size");
+			php_error_docref(NULL, E_WARNING, "Integer overflow in data size");
 			RETURN_FALSE;
 		}
 		data_s = emalloc((size_t)data_size + 1);
