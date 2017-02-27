@@ -2,7 +2,7 @@
    +----------------------------------------------------------------------+
    | Zend Engine                                                          |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1998-2016 Zend Technologies Ltd. (http://www.zend.com) |
+   | Copyright (c) 1998-2017 Zend Technologies Ltd. (http://www.zend.com) |
    +----------------------------------------------------------------------+
    | This source file is subject to version 2.00 of the Zend license,     |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -736,9 +736,11 @@ zval *zend_std_read_dimension(zval *object, zval *offset, int type, zval *rv) /*
 		if (type == BP_VAR_IS) {
 			zend_call_method_with_1_params(object, ce, NULL, "offsetexists", rv, offset);
 			if (UNEXPECTED(Z_ISUNDEF_P(rv))) {
+				zval_ptr_dtor(offset);
 				return NULL;
 			}
 			if (!i_zend_is_true(rv)) {
+				zval_ptr_dtor(offset);
 				zval_ptr_dtor(rv);
 				return &EG(uninitialized_zval);
 			}

@@ -2,7 +2,7 @@
    +----------------------------------------------------------------------+
    | Zend OPcache                                                         |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1998-2016 The PHP Group                                |
+   | Copyright (c) 1998-2017 The PHP Group                                |
    +----------------------------------------------------------------------+
    | This source file is subject to version 3.01 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -112,6 +112,13 @@ void optimize_func_calls(zend_op_array *op_array, zend_optimizer_ctx *ctx)
 						opline->extended_value &= ZEND_FETCH_TYPE_MASK;
 						opline->opcode -= 9;
 					} else {
+						if (opline->opcode == ZEND_FETCH_DIM_FUNC_ARG
+								&& opline->op2_type == IS_UNUSED) {
+							/* FETCH_DIM_FUNC_ARG supports UNUSED op2, while FETCH_DIM_R does not.
+							 * Performing the replacement would create an invalid opcode. */
+							break;
+						}
+
 						opline->extended_value &= ZEND_FETCH_TYPE_MASK;
 						opline->opcode -= 12;
 					}

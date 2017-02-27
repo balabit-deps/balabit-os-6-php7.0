@@ -2,7 +2,7 @@
    +----------------------------------------------------------------------+
    | PHP Version 7                                                        |
    +----------------------------------------------------------------------+
-   | Copyright (c) 1997-2016 The PHP Group                                |
+   | Copyright (c) 1997-2017 The PHP Group                                |
    +----------------------------------------------------------------------+
    | This source file is subject to version 3.01 of the PHP license,      |
    | that is bundled with this package in the file LICENSE, and is        |
@@ -1269,11 +1269,7 @@ PHPAPI zend_string *php_escape_html_entities_ex(unsigned char *old, size_t oldle
 	if (oldlen < 64) {
 		maxlen = 128;
 	} else {
-		maxlen = 2 * oldlen;
-		if (maxlen < oldlen) {
-			zend_error_noreturn(E_ERROR, "Input string is too long");
-			return NULL;
-		}
+		maxlen = zend_safe_addmult(oldlen, 2, 0, "html_entities");
 	}
 
 	replaced = zend_string_alloc(maxlen, 0);
