@@ -1,3 +1,12 @@
+php7.0 (7.0.15-0ubuntu0.16.04.4) xenial-security; urgency=medium
+
+  * SECURITY REGRESSION: large mysql requests broken (LP: #1668017)
+    - debian/patches/fix_74021.patch: fix fetch_array with more than
+      MEDIUMBLOB in ext/mysqlnd/mysqlnd_wireprotocol.c, added tests to
+      ext/mysqli/tests/bug73800.phpt, ext/mysqli/tests/bug74021.phpt.
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Wed, 01 Mar 2017 10:55:45 -0500
+
 php7.0 (7.0.15-0ubuntu0.16.04.2) xenial-security; urgency=medium
 
   * No change rebuild in the -security pocket.
