@@ -71,7 +71,8 @@ Build-Depends: apache2-dev (>= 2.4),
                systemtap-sdt-dev [amd64 i386 powerpc armel armhf ia64],
                tzdata,
                unixodbc-dev,
-               zlib1g-dev
+               zlib1g-dev,
+               oracle-instantclient-lite-dev
 Build-Conflicts: bind-dev,
                  libxmlrpc-core-c3-dev
 Standards-Version: 3.9.7
@@ -953,3 +954,14 @@ Description: CURL module for PHP
  PHP (recursive acronym for PHP: Hypertext Preprocessor) is a widely-used
  open source general-purpose scripting language that is especially suited
  for web development and can be embedded into HTML.
+
+Package: php7.0-oci8
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, php7.0-common (= ${binary:Version})
+Description: Oracle module for php7.0
+ This package provides a module for oracle database.
+ .
+ PHP5 is an HTML-embedded scripting language. Much of its syntax is borrowed
+ from C, Java and Perl with a couple of unique PHP-specific features thrown
+ in. The goal of the language is to allow web developers to write dinamically
+ generated pages quickly. This version of PHP5 was built with the Suhosin patch.
