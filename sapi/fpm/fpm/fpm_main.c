@@ -1533,11 +1533,10 @@ PHP_FUNCTION(fastcgi_finish_request) /* {{{ */
 	fcgi_request *request = (fcgi_request*) SG(server_context);
 
 	if (!fcgi_is_closed(request)) {
-
 		php_output_end_all();
 		php_header();
 
-		fcgi_flush(request, 1);
+		fcgi_end(request);
 		fcgi_close(request, 0, 0);
 		RETURN_TRUE;
 	}
@@ -1997,7 +1996,8 @@ fastcgi_request_done:
 
 			requests++;
 			if (UNEXPECTED(max_requests && (requests == max_requests))) {
-				fcgi_finish_request(request, 1);
+				fcgi_request_set_keep(request, 0);
+				fcgi_finish_request(request, 0);
 				break;
 			}
 			/* end of fastcgi loop */

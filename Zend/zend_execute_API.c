@@ -344,6 +344,10 @@ void shutdown_executor(void) /* {{{ */
 	} zend_end_try();
 
 	zend_try {
+		clean_non_persistent_constants();
+    } zend_end_try();
+
+	zend_try {
 		zend_close_rsrc_list(&EG(regular_list));
 	} zend_end_try();
 
@@ -372,10 +376,6 @@ void shutdown_executor(void) /* {{{ */
 			FREE_HASHTABLE(*EG(symtable_cache_ptr));
 			EG(symtable_cache_ptr)--;
 		}
-	} zend_end_try();
-
-	zend_try {
-		clean_non_persistent_constants();
 	} zend_end_try();
 
 	zend_try {
@@ -755,6 +755,15 @@ int zend_call_function(zend_fcall_info *fci, zend_fcall_info_cache *fci_cache) /
 			}
 			zend_error(E_DEPRECATED, "%s", error);
 			efree(error);
+			if (UNEXPECTED(EG(exception))) {
+				if (callable_name) {
+					zend_string_release(callable_name);
+				}
+				if (EG(current_execute_data) == &dummy_execute_data) {
+					EG(current_execute_data) = dummy_execute_data.prev_execute_data;
+				}
+				return FAILURE;
+			}
 		}
 		zend_string_release(callable_name);
 	}

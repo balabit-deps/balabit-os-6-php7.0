@@ -26,7 +26,7 @@
 
 #if HAVE_LIBMCRYPT
 
-#if PHP_WIN32
+#ifdef PHP_WIN32
 # include "win32/winutil.h"
 #endif
 
@@ -572,7 +572,9 @@ PHP_FUNCTION(mcrypt_generic_init)
 	memcpy(key_s, key, key_len);
 
 	if (iv_len != iv_size) {
-		php_error_docref(NULL, E_WARNING, "Iv size incorrect; supplied length: %zd, needed: %d", iv_len, iv_size);
+		if (mcrypt_enc_mode_has_iv(pm->td)) {
+			php_error_docref(NULL, E_WARNING, "Iv size incorrect; supplied length: %zd, needed: %d", iv_len, iv_size);
+		}
 		if (iv_len > iv_size) {
 			iv_len = iv_size;
 		}
@@ -1374,7 +1376,7 @@ PHP_FUNCTION(mcrypt_create_iv)
 	iv = ecalloc(size + 1, 1);
 
 	if (source == RANDOM || source == URANDOM) {
-#if PHP_WIN32
+#ifdef PHP_WIN32
 		/* random/urandom equivalent on Windows */
 		BYTE *iv_b = (BYTE *) iv;
 		if (php_win32_get_random_bytes(iv_b, (size_t) size) == FAILURE){

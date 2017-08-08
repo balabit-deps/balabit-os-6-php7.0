@@ -1,3 +1,33 @@
+php7.0 (7.0.22-0ubuntu0.16.04.1) xenial-security; urgency=medium
+
+  * New upstream release (7.0.22)
+    - LP: #1709489
+
+ -- Nishanth Aravamudan <nish.aravamudan@canonical.com>  Tue, 08 Aug 2017 15:14:19 -0700
+
+php7.0 (7.0.18-0ubuntu0.16.04.1) xenial; urgency=medium
+
+  * New upstream release 7.0.18
+    - LP: #1686237
+    - LP: #1674892
+    - Refresh patches for new upstream release
+  * Drop:
+    - debian/patches/0053-Fix-pdo_pgsql.patch: Fixed #73959 - lastInsertId
+      fails to throw an exception in pdsql.  Thanks to andrewnester
+      <andrew.nester.dev@gmail.com>.  Closes LP #1658289.
+      [ Fixed upstream in 7.0.16, prior changelog referred to wrong
+        patchfile ]
+    - SECURITY REGRESSION: large mysql requests broken (LP #1668017)
+      + debian/patches/fix_74021.patch: fix fetch_array with more than
+        MEDIUMBLOB in ext/mysqlnd/mysqlnd_wireprotocol.c, added tests to
+        ext/mysqli/tests/bug73800.phpt, ext/mysqli/tests/bug74021.phpt.
+      [ Fixed upstream in 7.0.17 ]
+  * d/control{,.in}: Backport "libapache2-mod-phpX.Y now recommends
+    apache2 package (as this is what most people want anyway)" from
+    Debian 8.0.7-3 (LP: #1689646).
+
+ -- Nishanth Aravamudan <nish.aravamudan@canonical.com>  Wed, 10 May 2017 09:19:03 -0700
+
 php7.0 (7.0.15-0ubuntu0.16.04.4) xenial-security; urgency=medium
 
   * SECURITY REGRESSION: large mysql requests broken (LP: #1668017)

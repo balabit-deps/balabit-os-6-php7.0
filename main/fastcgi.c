@@ -76,7 +76,9 @@ static int is_impersonate = 0;
 # include <netdb.h>
 # include <signal.h>
 
-# if defined(HAVE_SYS_POLL_H) && defined(HAVE_POLL)
+# if defined(HAVE_POLL_H) && defined(HAVE_POLL)
+#  include <poll.h>
+# elif defined(HAVE_SYS_POLL_H) && defined(HAVE_POLL)
 #  include <sys/poll.h>
 # endif
 # if defined(HAVE_SYS_SELECT_H)
@@ -216,7 +218,7 @@ struct _fcgi_request {
 #ifdef TCP_NODELAY
 	int            nodelay;
 #endif
-	int            closed;
+	int            ended;
 	int            in_len;
 	int            in_pad;
 
@@ -460,6 +462,11 @@ int fcgi_in_shutdown(void)
 void fcgi_terminate(void)
 {
 	in_shutdown = 1;
+}
+
+void fcgi_request_set_keep(fcgi_request *req, int new_value)
+{
+	req->keep = new_value;
 }
 
 #ifndef HAVE_ATTRIBUTE_WEAK
@@ -1045,7 +1052,7 @@ static int fcgi_read_request(fcgi_request *req)
 	unsigned char buf[FCGI_MAX_LENGTH+8];
 
 	req->keep = 0;
-	req->closed = 0;
+	req->ended = 0;
 	req->in_len = 0;
 	req->out_hdr = NULL;
 	req->out_pos = req->out_buf;
@@ -1422,11 +1429,9 @@ int fcgi_accept_request(fcgi_request *req)
 				break;
 #else
 				if (req->fd >= 0) {
-#if defined(HAVE_SYS_POLL_H) && defined(HAVE_POLL)
+#if defined(HAVE_POLL)
 					struct pollfd fds;
 					int ret;
-
-					req->hook.on_read();
 
 					fds.fd = req->fd;
 					fds.events = POLLIN;
@@ -1440,8 +1445,6 @@ int fcgi_accept_request(fcgi_request *req)
 					}
 					fcgi_close(req, 1, 0);
 #else
-					req->hook.on_read();
-
 					if (req->fd < FD_SETSIZE) {
 						struct timeval tv = {5,0};
 						fd_set set;
@@ -1468,6 +1471,7 @@ int fcgi_accept_request(fcgi_request *req)
 		} else if (in_shutdown) {
 			return -1;
 		}
+		req->hook.on_read();
 		if (fcgi_read_request(req)) {
 #ifdef _WIN32
 			if (is_impersonate && !req->tcp) {
@@ -1503,7 +1507,7 @@ static inline void close_packet(fcgi_request *req)
 	}
 }
 
-int fcgi_flush(fcgi_request *req, int close)
+int fcgi_flush(fcgi_request *req, int end)
 {
 	int len;
 
@@ -1511,7 +1515,7 @@ int fcgi_flush(fcgi_request *req, int close)
 
 	len = (int)(req->out_pos - req->out_buf);
 
-	if (close) {
+	if (end) {
 		fcgi_end_request_rec *rec = (fcgi_end_request_rec*)(req->out_pos);
 
 		fcgi_make_header(&rec->hdr, FCGI_END_REQUEST, req->id, sizeof(fcgi_end_request));
@@ -1645,15 +1649,21 @@ int fcgi_write(fcgi_request *req, fcgi_request_type type, const char *str, int l
 	return len;
 }
 
+int fcgi_end(fcgi_request *req) {
+	int ret = 1;
+	if (!req->ended) {
+		ret = fcgi_flush(req, 1);
+		req->ended = 1;
+	}
+	return ret;
+}
+
 int fcgi_finish_request(fcgi_request *req, int force_close)
 {
 	int ret = 1;
 
 	if (req->fd >= 0) {
-		if (!req->closed) {
-			ret = fcgi_flush(req, 1);
-			req->closed = 1;
-		}
+		ret = fcgi_end(req);
 		fcgi_close(req, force_close, 1);
 	}
 	return ret;

@@ -152,6 +152,7 @@ ZEND_TSRMLS_CACHE_DEFINE()
 #endif
 
 ZEND_API zend_utility_values zend_uv;
+ZEND_API zend_bool zend_dtrace_enabled;
 
 /* version information */
 static char *zend_version_info;
@@ -312,6 +313,9 @@ ZEND_API void zend_print_flat_zval_r(zval *expr) /* {{{ */
 			ZEND_PUTS(")");
 			break;
 		}
+		case IS_REFERENCE:
+			zend_print_flat_zval_r(Z_REFVAL_P(expr));
+			break;
 		default:
 			zend_print_variable(expr);
 			break;
@@ -563,6 +567,7 @@ static void executor_globals_ctor(zend_executor_globals *executor_globals) /* {{
 #ifdef ZEND_WIN32
 	zend_get_windows_version_info(&executor_globals->windows_version_info);
 #endif
+	executor_globals->valid_symbol_table = 0;
 }
 /* }}} */
 
@@ -682,6 +687,7 @@ int zend_startup(zend_utility_functions *utility_functions, char **extensions) /
 		char *tmp = getenv("USE_ZEND_DTRACE");
 
 		if (tmp && zend_atoi(tmp, 0)) {
+			zend_dtrace_enabled = 1;
 			zend_compile_file = dtrace_compile_file;
 			zend_execute_ex = dtrace_execute_ex;
 			zend_execute_internal = dtrace_execute_internal;

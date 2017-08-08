@@ -118,6 +118,8 @@ static zend_string *(*accelerator_orig_zend_resolve_path)(const char *filename, 
 static void (*orig_chdir)(INTERNAL_FUNCTION_PARAMETERS) = NULL;
 static ZEND_INI_MH((*orig_include_path_on_modify)) = NULL;
 
+static void accel_gen_system_id(void);
+
 #ifdef ZEND_WIN32
 # define INCREMENT(v) InterlockedIncrement64(&ZCSG(v))
 # define DECREMENT(v) InterlockedDecrement64(&ZCSG(v))
@@ -955,6 +957,17 @@ int validate_timestamp_and_record(zend_persistent_script *persistent_script, zen
 	}
 }
 
+int validate_timestamp_and_record_ex(zend_persistent_script *persistent_script, zend_file_handle *file_handle)
+{
+	int ret;
+
+	SHM_UNPROTECT();
+	ret = validate_timestamp_and_record(persistent_script, file_handle);
+	SHM_PROTECT();
+
+	return ret;
+}
+
 /* Instead of resolving full real path name each time we need to identify file,
  * we create a key that consist from requested file name, current working
  * directory, current include_path, etc */
@@ -1704,7 +1717,10 @@ zend_op_array *persistent_compile_file(zend_file_handle *file_handle, int type)
 				return accelerator_orig_compile_file(file_handle, type);
 			}
 			persistent_script = zend_accel_hash_str_find(&ZCSG(hash), key, key_length);
+		} else if (UNEXPECTED(is_stream_path(file_handle->filename) && !is_cacheable_stream_path(file_handle->filename))) {
+			return accelerator_orig_compile_file(file_handle, type);
 		}
+
 		if (!persistent_script) {
 			/* try to find cached script by full real path */
 			zend_accel_hash_entry *bucket;
@@ -2541,6 +2557,9 @@ static void accel_globals_ctor(zend_accel_globals *accel_globals)
 	ZEND_TSRMLS_CACHE_UPDATE();
 #endif
 	memset(accel_globals, 0, sizeof(zend_accel_globals));
+
+	/* TODO refactor to init this just once. */
+	accel_gen_system_id();
 }
 
 static void accel_globals_internal_func_dtor(zval *zv)
@@ -2921,11 +2940,18 @@ void accel_shutdown(void)
 
 void zend_accel_schedule_restart(zend_accel_restart_reason reason)
 {
+	const char *zend_accel_restart_reason_text[ACCEL_RESTART_USER + 1] = {
+		"out of memory",
+		"hash overflow",
+		"user",
+	};
+
 	if (ZCSG(restart_pending)) {
 		/* don't schedule twice */
 		return;
 	}
-	zend_accel_error(ACCEL_LOG_DEBUG, "Restart Scheduled!");
+	zend_accel_error(ACCEL_LOG_DEBUG, "Restart Scheduled! Reason: %s",
+			zend_accel_restart_reason_text[reason]);
 
 	SHM_UNPROTECT();
 	ZCSG(restart_pending) = 1;

@@ -507,7 +507,7 @@ ZEND_FUNCTION(func_get_args)
 {
 	zval *p, *q;
 	uint32_t arg_count, first_extra_arg;
-	uint32_t i, n;
+	uint32_t i;
 	zend_execute_data *ex = EX(prev_execute_data);
 
 	if (ZEND_CALL_INFO(ex) & ZEND_CALL_CODE) {
@@ -523,7 +523,6 @@ ZEND_FUNCTION(func_get_args)
 		zend_hash_real_init(Z_ARRVAL_P(return_value), 1);
 		ZEND_HASH_FILL_PACKED(Z_ARRVAL_P(return_value)) {
 			i = 0;
-			n = 0;
 			p = ZEND_CALL_ARG(ex, 1);
 			if (arg_count > first_extra_arg) {
 				while (i < first_extra_arg) {
@@ -533,7 +532,8 @@ ZEND_FUNCTION(func_get_args)
 						if (Z_OPT_REFCOUNTED_P(q)) { 
 							Z_ADDREF_P(q);
 						}
-						n++;
+					} else {
+						q = &EG(uninitialized_zval);
 					}
 					ZEND_HASH_FILL_ADD(q);
 					p++;
@@ -548,14 +548,15 @@ ZEND_FUNCTION(func_get_args)
 					if (Z_OPT_REFCOUNTED_P(q)) { 
 						Z_ADDREF_P(q);
 					}
-					n++;
+				} else {
+					q = &EG(uninitialized_zval);
 				}
 				ZEND_HASH_FILL_ADD(q);
 				p++;
 				i++;
 			}
 		} ZEND_HASH_FILL_END();
-		Z_ARRVAL_P(return_value)->nNumOfElements = n;
+		Z_ARRVAL_P(return_value)->nNumOfElements = arg_count;
 	}
 }
 /* }}} */
@@ -808,9 +809,6 @@ static void copy_constant_array(zval *dst, zval *src) /* {{{ */
 			}
 		} else if (Z_REFCOUNTED_P(val)) {
 			Z_ADDREF_P(val);
-			if (UNEXPECTED(Z_TYPE_INFO_P(val) == IS_RESOURCE_EX)) {
-				Z_TYPE_INFO_P(new_val) &= ~(IS_TYPE_REFCOUNTED << Z_TYPE_FLAGS_SHIFT);
-			}
 		}
 	} ZEND_HASH_FOREACH_END();
 }
@@ -853,12 +851,7 @@ repeat:
 		case IS_FALSE:
 		case IS_TRUE:
 		case IS_NULL:
-			break;
 		case IS_RESOURCE:
-			ZVAL_COPY(&val_free, val);
-			/* TODO: better solution than this tricky disable dtor on resource? */
-			Z_TYPE_INFO(val_free) &= ~(IS_TYPE_REFCOUNTED << Z_TYPE_FLAGS_SHIFT);
-			val = &val_free;
 			break;
 		case IS_ARRAY:
 			if (!Z_IMMUTABLE_P(val)) {
@@ -1154,6 +1147,8 @@ ZEND_FUNCTION(get_object_vars)
 	HashTable *properties;
 	zend_string *key;
 	zend_object *zobj;
+	zend_ulong index;
+	zend_bool fast_copy = 0;
 
 	ZEND_PARSE_PARAMETERS_START(1, 1)
 		Z_PARAM_OBJECT(obj)
@@ -1172,7 +1167,17 @@ ZEND_FUNCTION(get_object_vars)
 	zobj = Z_OBJ_P(obj);
 
 	if (!zobj->ce->default_properties_count && properties == zobj->properties && !ZEND_HASH_GET_APPLY_COUNT(properties)) {
-		/* fast copy */
+		fast_copy = 1;
+		/* Check if the object has a numeric property, See Bug 73998 */
+		ZEND_HASH_FOREACH_STR_KEY(properties, key) {
+			if (key && ZEND_HANDLE_NUMERIC(key, index)) {
+				fast_copy = 0;
+				break;
+			}
+		} ZEND_HASH_FOREACH_END();
+	}
+
+	if (fast_copy) {
 		if (EXPECTED(zobj->handlers == &std_object_handlers)) {
 			if (EXPECTED(!(GC_FLAGS(properties) & IS_ARRAY_IMMUTABLE))) {
 				GC_REFCOUNT(properties)++;
@@ -1198,7 +1203,7 @@ ZEND_FUNCTION(get_object_vars)
 						zend_unmangle_property_name_ex(key, &class_name, &prop_name, &prop_len);
 						zend_hash_str_add_new(Z_ARRVAL_P(return_value), prop_name, prop_len, value);
 					} else {
-						zend_hash_add_new(Z_ARRVAL_P(return_value), key, value);
+						zend_symbtable_add_new(Z_ARRVAL_P(return_value), key, value);
 					}
 				}
 			}
@@ -2215,7 +2220,6 @@ static void debug_backtrace_get_args(zend_execute_data *call, zval *arg_array) /
 	array_init_size(arg_array, num_args);
 	if (num_args) {
 		uint32_t i = 0;
-		uint32_t n = 0;
 		zval *p = ZEND_CALL_ARG(call, 1);
 
 		zend_hash_real_init(Z_ARRVAL_P(arg_array), 1);
@@ -2238,12 +2242,9 @@ static void debug_backtrace_get_args(zend_execute_data *call, zval *arg_array) /
 							if (Z_OPT_REFCOUNTED_P(arg)) {
 								Z_ADDREF_P(arg);
 							}
-							n++;
 							ZEND_HASH_FILL_ADD(arg);
 						} else {
-							zval tmp;
-							ZVAL_UNDEF(&tmp);
-							ZEND_HASH_FILL_ADD(&tmp);
+							ZEND_HASH_FILL_ADD(&EG(uninitialized_zval));
 						}
 						i++;
 					}
@@ -2253,9 +2254,10 @@ static void debug_backtrace_get_args(zend_execute_data *call, zval *arg_array) /
 							if (Z_OPT_REFCOUNTED_P(p)) {
 								Z_ADDREF_P(p);
 							}
-							n++;
+							ZEND_HASH_FILL_ADD(p);
+						} else {
+							ZEND_HASH_FILL_ADD(&EG(uninitialized_zval));
 						}
-						ZEND_HASH_FILL_ADD(p);
 						p++;
 						i++;
 					}
@@ -2268,14 +2270,15 @@ static void debug_backtrace_get_args(zend_execute_data *call, zval *arg_array) /
 					if (Z_OPT_REFCOUNTED_P(p)) {
 						Z_ADDREF_P(p);
 					}
-					n++;
+					ZEND_HASH_FILL_ADD(p);
+				} else {
+					ZEND_HASH_FILL_ADD(&EG(uninitialized_zval));
 				}
-				ZEND_HASH_FILL_ADD(p);
 				p++;
 				i++;
 			}
 		} ZEND_HASH_FILL_END();
-		Z_ARRVAL_P(arg_array)->nNumOfElements = n;
+		Z_ARRVAL_P(arg_array)->nNumOfElements = num_args;
 	}
 }
 /* }}} */
@@ -2364,13 +2367,19 @@ ZEND_FUNCTION(debug_print_backtrace)
 		object = Z_OBJ(call->This);
 
 		if (call->func) {
+			zend_string *zend_function_name;
+
 			func = call->func;
-			function_name = (func->common.scope &&
-			                 func->common.scope->trait_aliases) ?
-				ZSTR_VAL(zend_resolve_method_name(
-					(object ? object->ce : func->common.scope), func)) :
-				(func->common.function_name ?
-					ZSTR_VAL(func->common.function_name) : NULL);
+            if (func->common.scope && func->common.scope->trait_aliases) {
+                zend_function_name = zend_resolve_method_name(object ? object->ce : func->common.scope, func);
+            } else {
+                zend_function_name = func->common.function_name;
+            }
+            if (zend_function_name != NULL) {
+                function_name = ZSTR_VAL(zend_function_name);
+            } else {
+                function_name = NULL;
+            }
 		} else {
 			func = NULL;
 			function_name = NULL;

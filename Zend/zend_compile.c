@@ -1574,6 +1574,7 @@ int zendlex(zend_parser_stack_elem *elem) /* {{{ */
 {
 	zval zv;
 	int retval;
+	uint32_t start_lineno;
 
 	if (CG(increment_lineno)) {
 		CG(zend_lineno)++;
@@ -1582,6 +1583,7 @@ int zendlex(zend_parser_stack_elem *elem) /* {{{ */
 
 again:
 	ZVAL_UNDEF(&zv);
+	start_lineno = CG(zend_lineno);
 	retval = lex_scan(&zv);
 	if (EG(exception)) {
 		return T_ERROR;
@@ -1605,7 +1607,7 @@ again:
 			break;
 	}
 	if (Z_TYPE(zv) != IS_UNDEF) {
-		elem->ast = zend_ast_create_zval(&zv);
+		elem->ast = zend_ast_create_zval_with_lineno(&zv, 0, start_lineno);
 	}
 
 	return retval;
@@ -4366,8 +4368,12 @@ void zend_compile_declare(zend_ast *ast) /* {{{ */
 		zend_ast *declare_ast = declares->child[i];
 		zend_ast *name_ast = declare_ast->child[0];
 		zend_ast *value_ast = declare_ast->child[1];
-
 		zend_string *name = zend_ast_get_str(name_ast);
+
+		if (value_ast->kind != ZEND_AST_ZVAL) {
+			zend_error_noreturn(E_COMPILE_ERROR, "declare(%s) value must be a literal", ZSTR_VAL(name));
+		}
+
 		if (zend_string_equals_literal_ci(name, "ticks")) {
 			zval value_zv;
 			zend_const_expr_to_zval(&value_zv, value_ast);
@@ -6663,8 +6669,11 @@ void zend_compile_class_const(znode *result, zend_ast *ast) /* {{{ */
 		return;
 	}
 
-	zend_eval_const_expr(&class_ast);
-	zend_eval_const_expr(&const_ast);
+	zend_eval_const_expr(&ast->child[0]);
+	zend_eval_const_expr(&ast->child[1]);
+
+	class_ast = ast->child[0];
+	const_ast = ast->child[1];
 
 	if (class_ast->kind == ZEND_AST_ZVAL) {
 		resolved_name = zend_resolve_class_name_ast(class_ast);
@@ -7308,6 +7317,8 @@ void zend_compile_expr(znode *result, zend_ast *ast) /* {{{ */
 
 void zend_compile_var(znode *result, zend_ast *ast, uint32_t type) /* {{{ */
 {
+	CG(zend_lineno) = zend_ast_get_lineno(ast);
+
 	switch (ast->kind) {
 		case ZEND_AST_VAR:
 			zend_compile_simple_var(result, ast, type, 0);
@@ -7604,8 +7615,11 @@ void zend_eval_const_expr(zend_ast **ast_ptr) /* {{{ */
 				break;
 			}
 
-			zend_eval_const_expr(&class_ast);
-			zend_eval_const_expr(&name_ast);
+			zend_eval_const_expr(&ast->child[0]);
+			zend_eval_const_expr(&ast->child[1]);
+
+			class_ast = ast->child[0];
+			name_ast = ast->child[1];
 
 			if (name_ast->kind == ZEND_AST_ZVAL && zend_string_equals_literal_ci(zend_ast_get_str(name_ast), "class")) {
 				zend_error_noreturn(E_COMPILE_ERROR,

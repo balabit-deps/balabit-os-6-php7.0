@@ -349,7 +349,8 @@ dnl Check for available functions
 dnl
 dnl log2 could be used to improve the log function, however it requires C99. The check for log2 should be turned on,
 dnl as soon as we support C99.
-AC_CHECK_FUNCS(getcwd getwd asinh acosh atanh log1p hypot glob strfmon nice fpclass isinf isnan mempcpy strpncpy)
+AC_CHECK_FUNCS(getcwd getwd asinh acosh atanh log1p hypot glob strfmon nice fpclass mempcpy strpncpy)
+AC_CHECK_DECLS([isnan, isinf], [], [], [[#include <math.h>]])
 AC_FUNC_FNMATCH	
 
 dnl
@@ -401,6 +402,7 @@ dnl Detect library functions needed by php dns_xxx functions
 dnl ext/standard/php_dns.h will collect these in a single define: HAVE_FULL_DNS_FUNCS
 dnl
 PHP_CHECK_FUNC(res_nsearch, resolv, bind, socket)
+PHP_CHECK_FUNC(res_ndestroy, resolv, bind, socket)
 PHP_CHECK_FUNC(dns_search, resolv, bind, socket)
 PHP_CHECK_FUNC(dn_expand, resolv, bind, socket)
 PHP_CHECK_FUNC(dn_skipname, resolv, bind, socket)
@@ -419,7 +421,7 @@ AC_TRY_RUN([
 #include <math.h>
 #include <stdlib.h>
 
-#ifdef HAVE_ISNAN
+#if HAVE_DECL_ISNAN
 #define zend_isnan(a) isnan(a)
 #elif defined(HAVE_FPCLASS)
 #define zend_isnan(a) ((fpclass(a) == FP_SNAN) || (fpclass(a) == FP_QNAN))
@@ -450,11 +452,11 @@ AC_TRY_RUN([
 #include <math.h>
 #include <stdlib.h>
 
-#ifdef HAVE_ISINF
+#if HAVE_DECL_ISINF
 #define zend_isinf(a) isinf(a)
 #elif defined(INFINITY)
 /* Might not work, but is required by ISO C99 */
-#define zend_isinf(a) (((a)==INFINITY)?1:0)
+#define zend_isinf(a) (((a)==INFINITY || (a)==-INFINITY)?1:0)
 #elif defined(HAVE_FPCLASS)
 #define zend_isinf(a) ((fpclass(a) == FP_PINF) || (fpclass(a) == FP_NINF))
 #else
@@ -484,11 +486,11 @@ AC_TRY_RUN([
 #include <math.h>
 #include <stdlib.h>
 
-#ifdef HAVE_ISINF
+#if HAVE_DECL_ISINF
 #define zend_isinf(a) isinf(a)
 #elif defined(INFINITY)
 /* Might not work, but is required by ISO C99 */
-#define zend_isinf(a) (((a)==INFINITY)?1:0)
+#define zend_isinf(a) (((a)==INFINITY || (a)==-INFINITY)?1:0)
 #elif defined(HAVE_FPCLASS)
 #define zend_isinf(a) ((fpclass(a) == FP_PINF) || (fpclass(a) == FP_NINF))
 #else
@@ -519,7 +521,7 @@ AC_TRY_RUN([
 #include <math.h>
 #include <stdlib.h>
 
-#ifdef HAVE_ISNAN
+#if HAVE_DECL_ISNAN
 #define zend_isnan(a) isnan(a)
 #elif defined(HAVE_FPCLASS)
 #define zend_isnan(a) ((fpclass(a) == FP_SNAN) || (fpclass(a) == FP_QNAN))
@@ -605,11 +607,6 @@ dnl
 dnl Check for arc4random on BSD systems
 dnl
 AC_CHECK_DECLS([arc4random_buf])
-
-dnl
-dnl Check for getrandom on newer Linux kernels
-dnl
-AC_CHECK_DECLS([getrandom])
 
 dnl
 dnl Setup extension sources
