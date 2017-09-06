@@ -389,10 +389,17 @@ function conf_process_args()
 				} else {
 					/* we matched the non-default arg */
 					if (argval == null) {
-						argval = arg.defval == "no" ? "yes" : "no";
+						if (arg.defval == "no") {
+							argval = "yes";
+						} else if (arg.defval == "no,shared") {
+							argval = "yes,shared";
+							shared = true;
+						} else {
+							argval = "no";
+						}
 					}
 				}
-				
+
 				arg.argval = argval;
 				eval("PHP_" + arg.symval + " = argval;");
 				eval("PHP_" + arg.symval + "_SHARED = shared;");
@@ -2167,6 +2174,7 @@ function generate_phpize()
 	CJ.WriteLine("var PHP_DEBUG=" + '"' + PHP_DEBUG + '"');
 	CJ.WriteLine("var PHP_DLL_LIB =" + '"' + get_define('PHPLIB') + '"');
 	CJ.WriteLine("var PHP_DLL =" + '"' + get_define('PHPDLL') + '"');
+	CJ.WriteLine("var PHP_SECURITY_FLAGS =" + '"' + PHP_SECURITY_FLAGS + '"');
 
 	/* The corresponding configure options aren't enabled through phpize,
 		thus these dummy declarations are required. */
@@ -2663,6 +2671,10 @@ function toolset_setup_project_tools()
 		RE2CVERS = probe_binary(RE2C, "version");
 		STDOUT.WriteLine('  Detected re2c version ' + RE2CVERS);
 
+		if (RE2CVERS.match(/^\d+.\d+$/)) {
+			RE2CVERS += ".0";
+		}
+
 		intvers = RE2CVERS.replace(pattern, '') - 0;
 		intmin = MINRE2C.replace(pattern, '') - 0;
 
@@ -2856,7 +2868,9 @@ function toolset_setup_common_cflags()
 			ADD_FLAG('CFLAGS', ' /RTC1 ');
 		} else {
 			if (VCVERS >= 1900) {
-				ADD_FLAG('CFLAGS', "/guard:cf");
+				if (PHP_SECURITY_FLAGS == "yes") {
+					ADD_FLAG('CFLAGS', "/guard:cf");
+				}
 			}
 		}
 
@@ -2888,7 +2902,9 @@ function toolset_setup_common_ldlags()
 
 	if (VS_TOOLSET) {
 		if (VCVERS >= 1900) {
-			ADD_FLAG('LDFLAGS', "/GUARD:CF");
+			if (PHP_SECURITY_FLAGS == "yes") {
+				ADD_FLAG('LDFLAGS', "/GUARD:CF");
+			}
 		}
 	}
 }

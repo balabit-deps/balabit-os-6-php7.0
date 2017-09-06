@@ -616,7 +616,7 @@ int phpdbg_compile(void) /* {{{ */
 			memmove(data->line + 1, data->line, sizeof(uint) * data->lines);
 			data->line[0] = 0;
 			data->buf = erealloc(data->buf, data->len + start_line_len);
-			memmove(data->buf + start_line_len, data->buf, data->len * sizeof(uint));
+			memmove(data->buf + start_line_len, data->buf, data->len);
 			memcpy(data->buf, start_line, start_line_len);
 			efree(start_line);
 			data->len += start_line_len;
@@ -1257,7 +1257,7 @@ PHPDBG_API const char *phpdbg_load_module_or_extension(char **path, char **name)
 	handle = DL_LOAD(*path);
 
 	if (!handle) {
-#if PHP_WIN32
+#ifdef PHP_WIN32
 		char *err = GET_DL_ERROR();
 		if (err && err[0]) {
 			phpdbg_error("dl", "type=\"unknown\"", "%s", err);
