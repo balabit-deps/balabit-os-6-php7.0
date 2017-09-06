@@ -735,6 +735,7 @@ ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_ini_get_all, 0, 0, 0)
 	ZEND_ARG_INFO(0, extension)
+	ZEND_ARG_INFO(0, details)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO(arginfo_ini_set, 0)
@@ -1193,6 +1194,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_fputcsv, 0, 0, 2)
 	ZEND_ARG_INFO(0, fields) /* ARRAY_INFO(0, fields, 1) */
 	ZEND_ARG_INFO(0, delimiter)
 	ZEND_ARG_INFO(0, enclosure)
+	ZEND_ARG_INFO(0, escape_char)
 ZEND_END_ARG_INFO()
 
 ZEND_BEGIN_ARG_INFO_EX(arginfo_fgetcsv, 0, 0, 1)
@@ -1910,11 +1912,11 @@ ZEND_BEGIN_ARG_INFO(arginfo_mt_getrandmax, 0)
 ZEND_END_ARG_INFO()
 /* }}} */
 /* {{{ random.c */
-ZEND_BEGIN_ARG_INFO_EX(arginfo_random_bytes, 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_random_bytes, 0, 0, 1)
 	ZEND_ARG_INFO(0, length)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO_EX(arginfo_random_int, 0, 0, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_random_int, 0, 0, 2)
 	ZEND_ARG_INFO(0, min)
 	ZEND_ARG_INFO(0, max)
 ZEND_END_ARG_INFO()
@@ -4681,6 +4683,7 @@ PHPAPI int _php_error_log(int opt_err, char *message, char *opt, char *headers) 
 PHPAPI int _php_error_log_ex(int opt_err, char *message, size_t message_len, char *opt, char *headers) /* {{{ */
 {
 	php_stream *stream = NULL;
+	size_t nbytes;
 
 	switch (opt_err)
 	{
@@ -4700,8 +4703,11 @@ PHPAPI int _php_error_log_ex(int opt_err, char *message, size_t message_len, cha
 			if (!stream) {
 				return FAILURE;
 			}
-			php_stream_write(stream, message, message_len);
+			nbytes = php_stream_write(stream, message, message_len);
 			php_stream_close(stream);
+			if (nbytes != message_len) {
+				return FAILURE;
+			}
 			break;
 
 		case 4: /* send to SAPI */
@@ -5551,6 +5557,15 @@ PHP_FUNCTION(getservbyname)
 
 	serv = getservbyname(name, proto);
 
+#if defined(_AIX)
+	/*
+        On AIX, imap is only known as imap2 in /etc/services, while on Linux imap is an alias for imap2.
+        If a request for imap gives no result, we try again with imap2.
+        */
+	if (serv == NULL && strcmp(name,  "imap") == 0) {
+		serv = getservbyname("imap2", proto);
+	}
+#endif
 	if (serv == NULL) {
 		RETURN_FALSE;
 	}

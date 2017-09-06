@@ -339,7 +339,7 @@ ZEND_BEGIN_ARG_INFO_EX(arginfo_timezone_transitions_get, 0, 0, 1)
 	ZEND_ARG_INFO(0, timestamp_end)
 ZEND_END_ARG_INFO()
 
-ZEND_BEGIN_ARG_INFO(arginfo_timezone_method_transitions_get, 0)
+ZEND_BEGIN_ARG_INFO_EX(arginfo_timezone_method_transitions_get, 0, 0, 0)
 	ZEND_ARG_INFO(0, timestamp_begin)
 	ZEND_ARG_INFO(0, timestamp_end)
 ZEND_END_ARG_INFO()
@@ -765,6 +765,11 @@ PHP_RSHUTDOWN_FUNCTION(date)
 #define DATE_FORMAT_RFC1123  "D, d M Y H:i:s O"
 
 /*
+ * RFC7231, Section 7.1.1: http://tools.ietf.org/html/rfc7231
+ */
+#define DATE_FORMAT_RFC7231  "D, d M Y H:i:s \\G\\M\\T"
+
+/*
  * RFC2822, Section 3.3: http://www.ietf.org/rfc/rfc2822.txt
  *  FWS             =       ([*WSP CRLF] 1*WSP) /   ; Folding white space
  *  CFWS            =       *([FWS] comment) (([FWS] comment) / FWS)
@@ -857,6 +862,7 @@ PHP_MINIT_FUNCTION(date)
 	REGISTER_STRING_CONSTANT("DATE_RFC850",  DATE_FORMAT_RFC850,  CONST_CS | CONST_PERSISTENT);
 	REGISTER_STRING_CONSTANT("DATE_RFC1036", DATE_FORMAT_RFC1036, CONST_CS | CONST_PERSISTENT);
 	REGISTER_STRING_CONSTANT("DATE_RFC1123", DATE_FORMAT_RFC1123, CONST_CS | CONST_PERSISTENT);
+	REGISTER_STRING_CONSTANT("DATE_RFC7231", DATE_FORMAT_RFC7231, CONST_CS | CONST_PERSISTENT);
 	REGISTER_STRING_CONSTANT("DATE_RFC2822", DATE_FORMAT_RFC2822, CONST_CS | CONST_PERSISTENT);
 	REGISTER_STRING_CONSTANT("DATE_RFC3339", DATE_FORMAT_RFC3339, CONST_CS | CONST_PERSISTENT);
 	REGISTER_STRING_CONSTANT("DATE_RFC3339_EXTENDED", DATE_FORMAT_RFC3339_EXTENDED, CONST_CS | CONST_PERSISTENT);
@@ -1141,11 +1147,12 @@ static zend_string *date_format(char *format, size_t format_len, timelib_time *t
 			case 'a': length = slprintf(buffer, 32, "%s", t->h >= 12 ? "pm" : "am"); break;
 			case 'A': length = slprintf(buffer, 32, "%s", t->h >= 12 ? "PM" : "AM"); break;
 			case 'B': {
-				int retval = (((((long)t->sse)-(((long)t->sse) - ((((long)t->sse) % 86400) + 3600))) * 10) / 864);
-				while (retval < 0) {
-					retval += 1000;
+				int retval = ((((long)t->sse)-(((long)t->sse) - ((((long)t->sse) % 86400) + 3600))) * 10);
+				if (retval < 0) {
+					retval += 864000;
 				}
-				retval = retval % 1000;
+				/* Make sure to do this on a positive int to avoid rounding errors */
+				retval = (retval / 864)  % 1000;
 				length = slprintf(buffer, 32, "%03d", retval);
 				break;
 			}
@@ -1336,11 +1343,12 @@ PHPAPI int php_idate(char format, time_t ts, int localtime)
 
 		/* Swatch Beat a.k.a. Internet Time */
 		case 'B':
-			retval = (((((long)t->sse)-(((long)t->sse) - ((((long)t->sse) % 86400) + 3600))) * 10) / 864);
-			while (retval < 0) {
-				retval += 1000;
+			retval = ((((long)t->sse)-(((long)t->sse) - ((((long)t->sse) % 86400) + 3600))) * 10);
+			if (retval < 0) {
+				retval += 864000;
 			}
-			retval = retval % 1000;
+			/* Make sure to do this on a positive int to avoid rounding errors */
+			retval = (retval / 864) % 1000;
 			break;
 
 		/* time */
@@ -1978,7 +1986,7 @@ static int date_interval_has_property(zval *object, zval *member, int type, void
 	zval *prop;
 	int retval = 0;
 
-	if (Z_TYPE_P(member) != IS_STRING) {
+	if (UNEXPECTED(Z_TYPE_P(member) != IS_STRING)) {
 		ZVAL_COPY(&tmp_member, member);
 		convert_to_string(&tmp_member);
 		member = &tmp_member;
@@ -1994,10 +2002,10 @@ static int date_interval_has_property(zval *object, zval *member, int type, void
 		}
 		return retval;
 	}
-
-	prop = date_interval_read_property(object, member, type, cache_slot, &rv);
-
-	if (prop != NULL) {
+	
+	prop = date_interval_read_property(object, member, BP_VAR_IS, cache_slot, &rv);
+	
+	if (prop != &EG(uninitialized_zval)) {
 		if (type == 2) {
 			retval = 1;
 		} else if (type == 1) {
@@ -2048,6 +2056,7 @@ static void date_register_classes(void) /* {{{ */
 	REGISTER_DATE_CLASS_CONST_STRING("RFC850",           DATE_FORMAT_RFC850);
 	REGISTER_DATE_CLASS_CONST_STRING("RFC1036",          DATE_FORMAT_RFC1036);
 	REGISTER_DATE_CLASS_CONST_STRING("RFC1123",          DATE_FORMAT_RFC1123);
+	REGISTER_DATE_CLASS_CONST_STRING("RFC7231",          DATE_FORMAT_RFC7231);
 	REGISTER_DATE_CLASS_CONST_STRING("RFC2822",          DATE_FORMAT_RFC2822);
 	REGISTER_DATE_CLASS_CONST_STRING("RFC3339",          DATE_FORMAT_RFC3339);
 	REGISTER_DATE_CLASS_CONST_STRING("RFC3339_EXTENDED", DATE_FORMAT_RFC3339_EXTENDED);

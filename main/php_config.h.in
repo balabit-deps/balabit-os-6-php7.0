@@ -554,9 +554,17 @@
    you don't. */
 #undef HAVE_DECL_ARC4RANDOM_BUF
 
-/* Define to 1 if you have the declaration of `getrandom', and to 0 if you
+/* Define to 1 if you have the declaration of `isfinite', and to 0 if you
    don't. */
-#undef HAVE_DECL_GETRANDOM
+#undef HAVE_DECL_ISFINITE
+
+/* Define to 1 if you have the declaration of `isinf', and to 0 if you don't.
+   */
+#undef HAVE_DECL_ISINF
+
+/* Define to 1 if you have the declaration of `isnan', and to 0 if you don't.
+   */
+#undef HAVE_DECL_ISNAN
 
 /* Define to 1 if you have the declaration of `tzname', and to 0 if you don't.
    */
@@ -964,15 +972,6 @@
 /* Define to 1 if you have the `isascii' function. */
 #undef HAVE_ISASCII
 
-/* Define to 1 if you have the `isfinite' function. */
-#undef HAVE_ISFINITE
-
-/* Define to 1 if you have the `isinf' function. */
-#undef HAVE_ISINF
-
-/* Define to 1 if you have the `isnan' function. */
-#undef HAVE_ISNAN
-
 /* */
 #undef HAVE_ISQLEXT_H
 
@@ -1342,6 +1341,9 @@
 /* Define to 1 if you have the `poll' function. */
 #undef HAVE_POLL
 
+/* Define to 1 if you have the <poll.h> header file. */
+#undef HAVE_POLL_H
+
 /* do we have port framework? */
 #undef HAVE_PORT
 
@@ -1470,6 +1472,9 @@
 
 /* Define to 1 if you have the <resolv.h> header file. */
 #undef HAVE_RESOLV_H
+
+/* */
+#undef HAVE_RES_NDESTROY
 
 /* */
 #undef HAVE_RES_NSEARCH
@@ -2522,33 +2527,33 @@ int zend_sprintf(char *buffer, const char *format, ...);
 
 /* To enable the is_nan, is_infinite and is_finite PHP functions */
 #ifdef NETWARE
-	#define HAVE_ISNAN 1
-	#define HAVE_ISINF 1
-	#define HAVE_ISFINITE 1
+	#define HAVE_DECL_ISNAN 1
+	#define HAVE_DECL_ISINF 1
+	#define HAVE_DECL_ISFINITE 1
 #endif
 
 #ifndef zend_isnan
-#ifdef HAVE_ISNAN
+#if HAVE_DECL_ISNAN
 #define zend_isnan(a) isnan(a)
 #elif defined(HAVE_FPCLASS)
 #define zend_isnan(a) ((fpclass(a) == FP_SNAN) || (fpclass(a) == FP_QNAN))
 #else
-#define zend_isnan(a) 0
+#define zend_isnan(a) ((a) != (a))
 #endif
 #endif
 
-#ifdef HAVE_ISINF
+#if HAVE_DECL_ISINF
 #define zend_isinf(a) isinf(a)
 #elif defined(INFINITY)
 /* Might not work, but is required by ISO C99 */
-#define zend_isinf(a) (((a)==INFINITY)?1:0)
+#define zend_isinf(a) (((a)==INFINITY || (a)==-INFINITY)?1:0)
 #elif defined(HAVE_FPCLASS)
 #define zend_isinf(a) ((fpclass(a) == FP_PINF) || (fpclass(a) == FP_NINF))
 #else
 #define zend_isinf(a) 0
 #endif
 
-#if defined(HAVE_ISFINITE) || defined(isfinite)
+#if HAVE_DECL_ISFINITE
 #define zend_finite(a) isfinite(a)
 #elif defined(HAVE_FINITE)
 #define zend_finite(a) finite(a)

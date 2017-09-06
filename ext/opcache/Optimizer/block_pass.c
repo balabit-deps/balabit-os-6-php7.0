@@ -561,6 +561,17 @@ static void zend_rebuild_access_path(zend_cfg *cfg, zend_op_array *op_array, int
 		convert_to_string((v)); \
 	}
 
+static int is_predecessor_smart_branch(zend_op *start, zend_op *predecessor) {
+	do {
+		if (predecessor == start) {
+			return 0;
+		}
+		predecessor--;
+	} while (predecessor->opcode == ZEND_NOP);
+
+	return zend_is_smart_branch(predecessor);
+}
+
 static void strip_nop(zend_code_block *block, zend_op_array *op_array, zend_optimizer_ctx *ctx)
 {
 	zend_op *opline = block->start_opline;
@@ -602,8 +613,7 @@ static void strip_nop(zend_code_block *block, zend_op_array *op_array, zend_opti
 			 && ((opline + 1)->opcode == ZEND_JMPZ
 			  || (opline + 1)->opcode == ZEND_JMPNZ)
 			 && (opline + 1)->op1_type & (IS_CV|IS_CONST)
-			 && opline > op_array->opcodes
-			 && zend_is_smart_branch(opline - 1)) {
+			 && is_predecessor_smart_branch(op_array->opcodes, opline)) {
 				/* don't remove NOP, that splits incorrect smart branch */
 				opline++;
 				break;
@@ -1452,7 +1462,9 @@ static void zend_jmp_optimization(zend_code_block *block, zend_op_array *op_arra
 						break;
 					}
 				}
-				if (last_op->op1_type & (IS_VAR|IS_TMP_VAR)) {
+				if (last_op->op1_type == IS_CV) {
+					break;
+				} else if (last_op->op1_type & (IS_VAR|IS_TMP_VAR)) {
 					last_op->opcode = ZEND_FREE;
 					last_op->op2.num = 0;
 					block->op2_to = NULL;
@@ -1987,6 +1999,10 @@ void optimize_cfg(zend_op_array *op_array, zend_optimizer_ctx *ctx)
 #endif
 
 	if (op_array->fn_flags & ZEND_ACC_HAS_FINALLY_BLOCK) {
+		return;
+	}
+
+	if ((uint64_t) op_array->last * (op_array->last_var + op_array->T) > 512 * 1024 * 1024) {
 		return;
 	}
 
