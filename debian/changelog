@@ -1,3 +1,9 @@
+php7.0 (7.0.22-0ubuntu0.16.04.1bb1) xenial; urgency=medium
+
+  * Balabit patched version
+
+ -- Balabit Platform Team <devnull@dev.null>  Wed, 06 Sep 2017 14:35:04 +0200
+
 php7.0 (7.0.22-0ubuntu0.16.04.1) xenial-security; urgency=medium
 
   * New upstream release (7.0.22)
