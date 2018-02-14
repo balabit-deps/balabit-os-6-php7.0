@@ -1,3 +1,11 @@
+php7.0 (7.0.25-0ubuntu0.16.04.1) xenial; urgency=medium
+
+  * New upstream release (7.0.25)
+    - LP: #1724896
+    - LP: #1721607
+
+ -- Nishanth Aravamudan <nish.aravamudan@canonical.com>  Wed, 01 Nov 2017 10:18:38 -0700
+
 php7.0 (7.0.22-0ubuntu0.16.04.1bb2) xenial; urgency=medium
 
   * Balabit patched version
