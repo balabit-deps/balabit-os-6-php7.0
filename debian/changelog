@@ -1,3 +1,12 @@
+php7.0 (7.0.28-0ubuntu0.16.04.1) xenial-security; urgency=medium
+
+  * New upstream release (7.0.28)
+    - LP: #1744148
+    - CVE-2018-5712
+    - CVE-2018-7584
+
+ -- Nishanth Aravamudan <nish.aravamudan@canonical.com>  Wed, 14 Mar 2018 15:22:51 -0700
+
 php7.0 (7.0.25-0ubuntu0.16.04.1) xenial; urgency=medium
 
   * New upstream release (7.0.25)
