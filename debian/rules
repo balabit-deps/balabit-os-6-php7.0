@@ -92,7 +92,7 @@ MODULE_PACKAGE := \
 
 LIBTOOL_VERSION := $(shell dpkg-query -f'$${Version}' -W libtool)
 
-RUN_TESTS := no
+RUN_TESTS := yes
 ifeq (nocheck,$(findstring nocheck,$(DEB_BUILD_OPTIONS)))
   $(warning Disabling checks due DEB_BUILD_OPTIONS)
   RUN_TESTS := no
