@@ -1,3 +1,11 @@
+php7.0 (7.0.30-0ubuntu0.16.04.1) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: Update to 7.0.30 to fix security issues
+    - CVE-2018-10545, CVE-2018-10546, CVE-2018-10547, CVE-2018-10548,
+      CVE-2018-10549
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Wed, 09 May 2018 13:31:14 -0400
+
 php7.0 (7.0.28-0ubuntu0.16.04.1) xenial-security; urgency=medium
 
   * New upstream release (7.0.28)
