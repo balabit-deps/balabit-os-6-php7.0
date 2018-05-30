@@ -1,3 +1,9 @@
+php7.0 (7.0.30-0ubuntu0.16.04.1bb1) xenial; urgency=medium
+
+  * Balabit patched version
+
+ -- Balabit Platform Team <devnull@dev.null>  Wed, 30 May 2018 16:47:15 +0200
+
 php7.0 (7.0.30-0ubuntu0.16.04.1) xenial-security; urgency=medium
 
   * SECURITY UPDATE: Update to 7.0.30 to fix security issues
