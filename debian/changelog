@@ -1,3 +1,11 @@
+php7.0 (7.0.32-0ubuntu0.16.04.1) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: Update to 7.0.32 to fix security issues
+    - CVE-2018-14851
+    - CVE-2018-14883
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Thu, 13 Sep 2018 09:53:39 -0400
+
 php7.0 (7.0.30-0ubuntu0.16.04.1) xenial-security; urgency=medium
 
   * SECURITY UPDATE: Update to 7.0.30 to fix security issues
