@@ -1,3 +1,48 @@
+php7.0 (7.0.33-0ubuntu0.16.04.2) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: invalid memory access in xmlrpc_decode()
+    - debian/patches/CVE-2019-9020.patch: check length in
+      ext/xmlrpc/libxmlrpc/xml_element.c, added test to
+      ext/xmlrpc/tests/bug77242.phpt.
+    - CVE-2019-9020
+  * SECURITY UPDATE: buffer over-read in PHAR extension
+    - debian/patches/CVE-2019-9021.patch: properly calculate position in
+      ext/phar/phar.c, added test to ext/phar/tests/bug77247.phpt.
+    - CVE-2019-9021
+  * SECURITY UPDATE: buffer over-read in dns_get_record
+    - debian/patches/CVE-2019-9022-pre.patch: fix DNS_CAA record results
+      handling in ext/standard/dns.c,
+      ext/standard/tests/network/dns_get_record_caa.phpt.
+    - debian/patches/CVE-2019-9022.patch: check length in
+      ext/standard/dns.c.
+    - CVE-2019-9022
+  * SECURITY UPDATE: buffer over-reads in mbstring regex functions
+    - debian/patches/CVE-2019-9023-1.patch: don't read past buffer in
+      ext/mbstring/oniguruma/regparse.c, added test to
+      ext/mbstring/tests/bug77370.phpt.
+    - debian/patches/CVE-2019-9023-2.patch: check bounds in
+      ext/mbstring/oniguruma/regcomp.c, added test to
+      ext/mbstring/tests/bug77371.phpt.
+    - debian/patches/CVE-2019-9023-3.patch: add length checks to
+      ext/mbstring/oniguruma/enc/unicode.c,
+      ext/mbstring/oniguruma/regcomp.c, ext/mbstring/oniguruma/regparse.c,
+      ext/mbstring/oniguruma/regparse.h, added test to
+      ext/mbstring/tests/bug77371.phpt, ext/mbstring/tests/bug77381.phpt.
+    - debian/patches/CVE-2019-9023-4.patch: add new bounds checks to
+      ext/mbstring/oniguruma/enc/utf16_be.c,
+      ext/mbstring/oniguruma/enc/utf16_le.c,
+      ext/mbstring/oniguruma/enc/utf32_be.c,
+      ext/mbstring/oniguruma/enc/utf32_le.c, added test to
+      ext/mbstring/tests/bug77418.phpt.
+    - CVE-2019-9023
+  * SECURITY UPDATE: buffer over-read in xmlrpc_decode()
+    - debian/patches/CVE-2019-9024.patch: fix variable size in
+      ext/xmlrpc/libxmlrpc/base64.c, added test to
+      ext/xmlrpc/tests/bug77380.phpt.
+    - CVE-2019-9024
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Tue, 05 Mar 2019 07:43:31 -0500
+
 php7.0 (7.0.33-0ubuntu0.16.04.1) xenial-security; urgency=medium
 
   * SECURITY UPDATE: Update to 7.0.33 to fix security issues
