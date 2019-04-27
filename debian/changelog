@@ -1,3 +1,16 @@
+php7.0 (7.0.33-0ubuntu0.16.04.4) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: Heap-buffer-overflow in php_ifd_get32s
+    - debian/patches/CVE-2019-11034.patch: check size in ext/exif/exif.c.
+    - CVE-2019-11034
+  * SECURITY UPDATE: Heap-buffer-overflow in exif_iif_add_value in EXIF
+    - debian/patches/CVE-2019-11035-1.patch: add checks to ext/exif/exif.c.
+    - debian/patches/CVE-2019-11035-2.patch: add casts to ext/exif/exif.c.
+    - debian/patches/CVE-2019-11035-3.patch: fix typo in ext/exif/exif.c.
+    - CVE-2019-11035
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Thu, 18 Apr 2019 11:25:19 -0400
+
 php7.0 (7.0.33-0ubuntu0.16.04.3bb1) xenial; urgency=medium
 
   * Balabit patched version
