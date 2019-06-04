@@ -1,3 +1,20 @@
+php7.0 (7.0.33-0ubuntu0.16.04.5) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: overflow in exif_process_IFD_TAG
+    - debian/patches/CVE-2019-11036.patch: check dir_entry in
+      ext/exif/exif.c.
+    - CVE-2019-11036
+  * SECURITY UPDATE: out-of-bounds read in _php_iconv_mime_decode()
+    - debian/patches/CVE-2019-11039.patch: add an extra check in
+      ext/iconv/iconv.c.
+    - CVE-2019-11039
+  * SECURITY UPDATE: heap-buffer-overflow on php_jpg_get16
+    - debian/patches/CVE-2019-11040.patch: add an extra check in
+      ext/exif/exif.c.
+    - CVE-2019-11040
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Tue, 04 Jun 2019 13:13:15 -0400
+
 php7.0 (7.0.33-0ubuntu0.16.04.4) xenial-security; urgency=medium
 
   * SECURITY UPDATE: Heap-buffer-overflow in php_ifd_get32s
