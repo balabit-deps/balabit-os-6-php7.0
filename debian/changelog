@@ -1,3 +1,9 @@
+php7.0 (7.0.33-0ubuntu0.16.04.5bb1) xenial; urgency=medium
+
+  * Balabit patched version
+
+ -- Balabit Platform Team <devnull@dev.null>  Fri, 07 Jun 2019 12:53:18 +0200
+
 php7.0 (7.0.33-0ubuntu0.16.04.5) xenial-security; urgency=medium
 
   * SECURITY UPDATE: overflow in exif_process_IFD_TAG
