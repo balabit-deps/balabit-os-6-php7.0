@@ -1,3 +1,12 @@
+php7.0 (7.0.33-0ubuntu0.16.04.7) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: RCE via env_path_info underflow
+    - debian/patches/CVE-2019-11043.patch: add check in
+      sapi/fpm/fpm/fpm_main.c.
+    - CVE-2019-11043
+
+ -- Marc Deslauriers <marc.deslauriers@ubuntu.com>  Thu, 24 Oct 2019 14:09:21 -0400
+
 php7.0 (7.0.33-0ubuntu0.16.04.6bb1) xenial; urgency=medium
 
   * Balabit patched version
