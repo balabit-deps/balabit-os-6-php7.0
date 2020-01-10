@@ -1,3 +1,29 @@
+php7.0 (7.0.33-0ubuntu0.16.04.9) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: silently truncates
+    a class after a null byte
+    - debian/patches/CVE-2019-11045.patch:  not accept
+      arbitrary strings in ext/spl/spl_directory.c,
+      ext/spl/tests/bug78863.phpt.
+    - CVE-2019-11045
+  * SECURITY UPDATE: Buffer underflow
+    - debian/patches/CVE-2019-11046.patch: not rely on `isdigit()`
+      to detect digits in ext/bcmath/libbcmath/src/str2num.c,
+      ext/bcmath/tests/bug78878.phpt.
+    - CVE-2019-11046
+  * SECURITY UPDATE: Heap-buffer-overflow
+    - debian/patches/CVE-2019-11047.patch: fix in ext/exif/exif.c,
+      ext/exif/tests/bug78910.phpt.
+    - CVE-2019-11047
+  * SECURITY UPDATE: Use-after-free
+    - debian/patches/CVE-2019-11050.patch: fix in
+      ext/exif/exif.c, ext/exif/tests/bug78793.phpt.
+    - CVE-2019-11050
+  * fixing test bug76557
+    - debian/patches/0001-Fixing-test-76557.patch.
+
+ -- Leonidas S. Barbosa <leo.barbosa@canonical.com>  Fri, 10 Jan 2020 14:09:31 -0300
+
 php7.0 (7.0.33-0ubuntu0.16.04.7) xenial-security; urgency=medium
 
   * SECURITY UPDATE: RCE via env_path_info underflow
