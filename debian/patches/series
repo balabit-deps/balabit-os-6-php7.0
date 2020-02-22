@@ -120,3 +120,5 @@ CVE-2019-11046.patch
 CVE-2019-11047.patch
 CVE-2019-11050.patch
 0001-Fixing-test-76557.patch
+CVE-2020-7059.patch
+CVE-2020-7060.patch

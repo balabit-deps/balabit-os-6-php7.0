@@ -1,3 +1,32 @@
+php7.0 (7.0.33-0ubuntu0.16.04.12) xenial-security; urgency=medium
+
+  * SECURITY REGRESSION: fpm patch for CVE-2015-9253
+    caused a regression OOM
+    - removing CVE-2015-9253.patch.
+
+ -- Leonidas S. Barbosa <leo.barbosa@canonical.com>  Wed, 19 Feb 2020 10:47:31 -0300
+
+php7.0 (7.0.33-0ubuntu0.16.04.11) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: Denial of service
+    - debian/patches/CVE-2015-9253.patch: directly listen
+      on socket, instead duping it to STDIN in
+      sapi/fpm/fpm/fpm_children.c, sapi/fpm/fpm_stdio.c,
+      and added tests to sapi/fpm/tests/bug73342-nonblocking-stdio.phpt.
+    - CVE-2015-9253
+  * SECURITY UPDATE: Out of bounds read
+    - debian/patches/CVE-2020-7059.patch: fix OOB read in
+      php_strip_tags_ex in ext/standard/string.c and added test
+      ext/standard/tests/file/bug79099.phpt.
+    - CVE-2020-7059
+  * SECURITY UPDATE: Buffer-overflow
+    - debian/patches/CVE-2020-7060.patch: fix adding a check function
+      is_in_cp950_pua in  ext/mbstring/libmbfl/filters/mbfilter_big5.c
+      and added test ext/mbstring/tests/bug79037.phpt.
+    - CVE-2020-7060
+
+ -- Leonidas S. Barbosa <leo.barbosa@canonical.com>  Tue, 11 Feb 2020 12:42:36 -0300
+
 php7.0 (7.0.33-0ubuntu0.16.04.9bb1) xenial; urgency=medium
 
   * Balabit patched version
