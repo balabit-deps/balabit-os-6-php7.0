@@ -1,3 +1,12 @@
+php7.0 (7.0.33-0ubuntu0.16.04.15) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: Denial of service through oversized memory allocated
+    - debian/patches/CVE-2019-11048.patch: changes types int to size_t
+      in main/rfc1867.c.
+    - CVE-2019-11048
+
+ -- Leonidas S. Barbosa <leo.barbosa@canonical.com>  Tue, 26 May 2020 10:52:55 -0300
+
 php7.0 (7.0.33-0ubuntu0.16.04.14bb1) xenial; urgency=medium
 
   * Balabit patched version
