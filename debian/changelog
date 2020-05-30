@@ -1,3 +1,9 @@
+php7.0 (7.0.33-0ubuntu0.16.04.15bb1) xenial; urgency=medium
+
+  * Balabit patched version
+
+ -- Balabit Platform Team <devnull@dev.null>  Sat, 30 May 2020 04:25:44 +0200
+
 php7.0 (7.0.33-0ubuntu0.16.04.15) xenial-security; urgency=medium
 
   * SECURITY UPDATE: Denial of service through oversized memory allocated
