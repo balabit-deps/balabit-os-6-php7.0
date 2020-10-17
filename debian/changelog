@@ -1,3 +1,9 @@
+php7.0 (7.0.33-0ubuntu0.16.04.16bb1) xenial; urgency=medium
+
+  * Balabit patched version
+
+ -- Balabit Platform Team <devnull@dev.null>  Sat, 17 Oct 2020 04:30:06 +0200
+
 php7.0 (7.0.33-0ubuntu0.16.04.16) xenial-security; urgency=medium
 
   * SECURITY UPDATE: Possibly forge cookie
