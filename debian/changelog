@@ -1,3 +1,13 @@
+php7.0 (7.0.33-0ubuntu0.16.04.16) xenial-security; urgency=medium
+
+  * SECURITY UPDATE: Possibly forge cookie
+    - debian/patches/CVE-2020-7070.patch: do not decode cookie names anymore
+      in main/php_variables.c, tests/basic/022.phpt, tests/basic/023.phpt,
+      tests/basic/bug79699.phpt.
+    - CVE-2020-7070
+
+ -- Leonidas S. Barbosa <leo.barbosa@canonical.com>  Wed, 07 Oct 2020 14:47:16 -0300
+
 php7.0 (7.0.33-0ubuntu0.16.04.15bb1) xenial; urgency=medium
 
   * Balabit patched version
